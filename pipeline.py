@@ -19,7 +19,7 @@ import faiss
 import numpy as np
 import torch
 import torch.nn.functional as F
-from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoConfig, AutoModel, AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer
 
 DEFAULT_EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
 DEFAULT_GENERATOR_MODEL = "Qwen/Qwen3.5-0.8B"
@@ -234,8 +234,12 @@ class Generator:
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
+        config = AutoConfig.from_pretrained(generator_model)
+        self.is_encoder_decoder = getattr(config, "is_encoder_decoder", False)
+        model_class = AutoModelForSeq2SeqLM if self.is_encoder_decoder else AutoModelForCausalLM
+
         self.model = _load_to_device(
-            AutoModelForCausalLM.from_pretrained(
+            model_class.from_pretrained(
                 generator_model,
                 torch_dtype=_generator_dtype(),
             ),
@@ -263,7 +267,10 @@ class Generator:
         )
         generation_time = time.perf_counter() - t0
 
-        new_tokens = output_ids[0, prompt_tokens:]
+        if self.is_encoder_decoder:
+            new_tokens = output_ids[0]
+        else:
+            new_tokens = output_ids[0, prompt_tokens:]
         answer = self.tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
 
         stats = {
