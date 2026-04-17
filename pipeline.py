@@ -219,6 +219,22 @@ class Retriever:
         passages = [self.passages[idx] for idx in indices[0] if idx != -1]
         return passages, elapsed
 
+    def retrieve_batch(self, queries: list[str], top_k: int) -> tuple[list[list[Passage]], float]:
+        if self.index is None:
+            raise ValueError("Retriever index is not loaded.")
+        if top_k <= 0:
+            raise ValueError("top_k must be positive.")
+
+        t0 = time.perf_counter()
+        query_embeddings = self._embed(queries, is_query=True)
+        _, indices = self.index.search(query_embeddings, min(top_k, len(self.passages)))
+        elapsed = time.perf_counter() - t0
+
+        batch_passages: list[list[Passage]] = []
+        for row in indices:
+            batch_passages.append([self.passages[idx] for idx in row if idx != -1])
+        return batch_passages, elapsed
+
 
 class Generator:
     def __init__(
@@ -233,6 +249,7 @@ class Generator:
         self.tokenizer = AutoTokenizer.from_pretrained(generator_model)
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.tokenizer.padding_side = "left"
 
         config = AutoConfig.from_pretrained(generator_model)
         self.is_encoder_decoder = getattr(config, "is_encoder_decoder", False)
@@ -279,6 +296,42 @@ class Generator:
         }
         return answer, stats
 
+    @torch.no_grad()
+    def generate_batch(self, queries: list[str], batch_passages: list[list[Passage]]) -> tuple[list[str], dict]:
+        prompts = [self._render_prompt(q, p) for q, p in zip(queries, batch_passages)]
+        device = next(self.model.parameters()).device
+        inputs = self.tokenizer(
+            prompts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=2048,
+        ).to(device)
+        prompt_tokens = inputs["input_ids"].shape[-1]
+
+        t0 = time.perf_counter()
+        output_ids = self.model.generate(
+            **inputs,
+            max_new_tokens=self.max_new_tokens,
+            do_sample=False,
+            pad_token_id=self.tokenizer.pad_token_id,
+        )
+        generation_time = time.perf_counter() - t0
+
+        if self.is_encoder_decoder:
+            new_tokens_batch = output_ids
+        else:
+            new_tokens_batch = output_ids[:, prompt_tokens:]
+
+        answers = self.tokenizer.batch_decode(new_tokens_batch, skip_special_tokens=True)
+        answers = [ans.strip() for ans in answers]
+
+        stats = {
+            "generated_tokens": int(new_tokens_batch.shape[-1] * len(queries)),
+            "generation_time_s": generation_time,
+        }
+        return answers, stats
+
 
 class RAGPipeline:
     def __init__(
@@ -321,3 +374,30 @@ class RAGPipeline:
             total_time_s=time.perf_counter() - t0,
             generated_tokens=stats["generated_tokens"],
         )
+
+    def run_batch(self, queries: list[str]) -> list[Result]:
+        t0 = time.perf_counter()
+        batch_retrieved_passages, retrieval_time = self.retriever.retrieve_batch(queries, self.top_k)
+        answers, stats = self.generator.generate_batch(queries, batch_retrieved_passages)
+        total_time_s = time.perf_counter() - t0
+
+        results = []
+        for i, query in enumerate(queries):
+            passages = batch_retrieved_passages[i]
+            proportional_retrieval_time = retrieval_time / max(1, len(queries))
+            proportional_generation_time = stats["generation_time_s"] / max(1, len(queries))
+            proportional_total_time = total_time_s / max(1, len(queries))
+            
+            results.append(
+                Result(
+                    query=query,
+                    answer=answers[i],
+                    retrieved_passage_ids=[p.passage_id for p in passages],
+                    retrieved_source_doc_ids=[p.source_doc_id for p in passages],
+                    retrieval_time_s=proportional_retrieval_time,
+                    generation_time_s=proportional_generation_time,
+                    total_time_s=proportional_total_time,
+                    generated_tokens=stats["generated_tokens"] // max(1, len(queries)),
+                )
+            )
+        return results

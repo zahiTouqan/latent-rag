@@ -126,6 +126,7 @@ def main() -> None:
     parser.add_argument("--generator_model", default=DEFAULT_GENERATOR_MODEL)
     parser.add_argument("--top_k", type=int, default=DEFAULT_TOP_K)
     parser.add_argument("--max_new_tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS)
+    parser.add_argument("--eval_batch_size", type=int, default=8)
     parser.add_argument("--results_dir", default="results")
     parser.add_argument("--bertscore", action="store_true")
     args = parser.parse_args()
@@ -172,39 +173,44 @@ def main() -> None:
     per_query_latency_ms: list[float] = []
     recall_values: list[float] = []
 
-    for sample in tqdm(samples):
-        result = pipeline.run(sample["query"])
-        per_query_latency_ms.append(result.total_time_s * 1000.0)
+    for start_idx in tqdm(range(0, len(samples), args.eval_batch_size)):
+        batch_samples = samples[start_idx : start_idx + args.eval_batch_size]
+        queries = [s["query"] for s in batch_samples]
+        
+        batch_results = pipeline.run_batch(queries)
+        
+        for sample, result in zip(batch_samples, batch_results):
+            per_query_latency_ms.append(result.total_time_s * 1000.0)
 
-        retrieved_ids = result.retrieved_passage_ids if use_passage_ids else list(dict.fromkeys(result.retrieved_source_doc_ids))
-        metric_row = {
-            "em": exact_match(result.answer, sample["answers"]),
-            "f1": token_f1(result.answer, sample["answers"]),
-            "retrieval_time_s": result.retrieval_time_s,
-            "generation_time_s": result.generation_time_s,
-            "total_time_s": result.total_time_s,
-            "generated_tokens": result.generated_tokens,
-        }
-
-        recall_value = None
-        if sample["relevant_ids"]:
-            recall_value = recall_at_k(retrieved_ids, sample["relevant_ids"], args.top_k)
-            recall_values.append(recall_value)
-
-        example_rows.append(
-            {
-                "query": sample["query"],
-                "gold_answers": sample["answers"],
-                "prediction": result.answer,
-                "retrieved_ids": retrieved_ids,
-                "relevant_ids": sample["relevant_ids"],
-                "recall_at_k": recall_value,
-                **metric_row,
+            retrieved_ids = result.retrieved_passage_ids if use_passage_ids else list(dict.fromkeys(result.retrieved_source_doc_ids))
+            metric_row = {
+                "em": exact_match(result.answer, sample["answers"]),
+                "f1": token_f1(result.answer, sample["answers"]),
+                "retrieval_time_s": result.retrieval_time_s,
+                "generation_time_s": result.generation_time_s,
+                "total_time_s": result.total_time_s,
+                "generated_tokens": result.generated_tokens,
             }
-        )
-        metric_rows.append(metric_row)
-        predictions.append(result.answer)
-        references.append(sample["answers"])
+
+            recall_value = None
+            if sample["relevant_ids"]:
+                recall_value = recall_at_k(retrieved_ids, sample["relevant_ids"], args.top_k)
+                recall_values.append(recall_value)
+
+            example_rows.append(
+                {
+                    "query": sample["query"],
+                    "gold_answers": sample["answers"],
+                    "prediction": result.answer,
+                    "retrieved_ids": retrieved_ids,
+                    "relevant_ids": sample["relevant_ids"],
+                    "recall_at_k": recall_value,
+                    **metric_row,
+                }
+            )
+            metric_rows.append(metric_row)
+            predictions.append(result.answer)
+            references.append(sample["answers"])
 
     aggregate = aggregate_metrics(metric_rows, per_query_latency_ms, recall_values, args.top_k)
     if use_bertscore:
@@ -225,6 +231,7 @@ def main() -> None:
             "index_dir": str(index_dir),
             "top_k": args.top_k,
             "max_new_tokens": args.max_new_tokens,
+            "eval_batch_size": args.eval_batch_size,
             "generator_model": args.generator_model,
             "index": asdict(pipeline.index_config),
             "bertscore_enabled": use_bertscore,
