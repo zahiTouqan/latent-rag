@@ -287,7 +287,11 @@ class Generator:
         combined_latents = torch.cat(batch_latents, dim=0).unsqueeze(0) # [1, total_len, hidden_dim]
 
         # Manual Greedy Decoding Loop injection via encoder_outputs
-        decoder_input_ids = torch.tensor([[self.model.config.decoder_start_token_id]], device=device)
+        start_token_id = getattr(self.model.config, "decoder_start_token_id", None)
+        if start_token_id is None:
+            start_token_id = getattr(self.model.config, "bos_token_id", self.tokenizer.pad_token_id)
+            
+        decoder_input_ids = torch.tensor([[start_token_id]], device=device)
         
         t0 = time.perf_counter()
         generated_tokens = 0
