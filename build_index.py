@@ -70,7 +70,7 @@ def main() -> None:
     parser.add_argument("--corpus_path", required=True, help="Passage JSONL with fields id, text, and optional doc_id")
     parser.add_argument("--index_dir", default="artifacts/index")
     parser.add_argument("--embedding_model", default=DEFAULT_EMBEDDING_MODEL)
-    parser.add_argument("--batch_size", type=int, default=256)
+    parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--max_docs", type=int, default=None)
     args = parser.parse_args()
 
