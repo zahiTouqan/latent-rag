@@ -20,6 +20,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers.modeling_outputs import BaseModelOutput
 from safetensors import safe_open
 from safetensors.torch import save_file
 
@@ -293,12 +294,15 @@ class Generator:
             
         decoder_input_ids = torch.tensor([[start_token_id]], device=device)
         
+        # Wrap the latents in a BaseModelOutput object for the new architectures!
+        encoder_outputs_obj = BaseModelOutput(last_hidden_state=combined_latents)
+        
         t0 = time.perf_counter()
         generated_tokens = 0
         
         for _ in range(self.max_new_tokens):
             outputs = self.model(
-                encoder_outputs=(combined_latents,),
+                encoder_outputs=encoder_outputs_obj,
                 decoder_input_ids=decoder_input_ids,
             )
             # Pick highest prob token
