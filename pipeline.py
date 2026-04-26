@@ -136,7 +136,7 @@ class Retriever:
             
             # Mean pool for FAISS search compatibility
             mean_pooled = true_latents.mean(dim=0).unsqueeze(0)
-            faiss_vec = F.normalize(mean_pooled, p=2, dim=-1).numpy()
+            faiss_vec = F.normalize(mean_pooled, p=2, dim=-1).float().numpy()
             faiss_vecs.append(faiss_vec)
 
         return np.concatenate(faiss_vecs, axis=0), saved_latents
