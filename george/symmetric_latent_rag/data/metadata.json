@@ -1,0 +1,74 @@
+{
+  "0": {
+    "id": "doc-12:0",
+    "doc_id": "doc-12",
+    "text": "Leaves are usually green. Healthy plants use",
+    "state_path": "/Users/georgetrump/Visual Studio Code/symmetric-latent-rag/symmetric_latent_rag/data/states/doc-12_0.pt"
+  },
+  "1": {
+    "id": "doc-12:1",
+    "doc_id": "doc-12",
+    "text": "plants use chlorophyll for photosynthesis. In autumn",
+    "state_path": "/Users/georgetrump/Visual Studio Code/symmetric-latent-rag/symmetric_latent_rag/data/states/doc-12_1.pt"
+  },
+  "2": {
+    "id": "doc-12:2",
+    "doc_id": "doc-12",
+    "text": "In autumn, leaves can also turn yellow",
+    "state_path": "/Users/georgetrump/Visual Studio Code/symmetric-latent-rag/symmetric_latent_rag/data/states/doc-12_2.pt"
+  },
+  "3": {
+    "id": "doc-12:3",
+    "doc_id": "doc-12",
+    "text": "turn yellow, orange, or red.",
+    "state_path": "/Users/georgetrump/Visual Studio Code/symmetric-latent-rag/symmetric_latent_rag/data/states/doc-12_3.pt"
+  },
+  "4": {
+    "id": "doc-13:0",
+    "doc_id": "doc-13",
+    "text": "The sky is usually blue during the day",
+    "state_path": "/Users/georgetrump/Visual Studio Code/symmetric-latent-rag/symmetric_latent_rag/data/states/doc-13_0.pt"
+  },
+  "5": {
+    "id": "doc-13:1",
+    "doc_id": "doc-13",
+    "text": "the day because of Rayleigh scattering. At",
+    "state_path": "/Users/georgetrump/Visual Studio Code/symmetric-latent-rag/symmetric_latent_rag/data/states/doc-13_1.pt"
+  },
+  "6": {
+    "id": "doc-13:2",
+    "doc_id": "doc-13",
+    "text": ". At sunrise and sunset, it may",
+    "state_path": "/Users/georgetrump/Visual Studio Code/symmetric-latent-rag/symmetric_latent_rag/data/states/doc-13_2.pt"
+  },
+  "7": {
+    "id": "doc-13:3",
+    "doc_id": "doc-13",
+    "text": "it may look orange or red.",
+    "state_path": "/Users/georgetrump/Visual Studio Code/symmetric-latent-rag/symmetric_latent_rag/data/states/doc-13_3.pt"
+  },
+  "8": {
+    "id": "doc-14:0",
+    "doc_id": "doc-14",
+    "text": "Fire trucks are usually red, although some",
+    "state_path": "/Users/georgetrump/Visual Studio Code/symmetric-latent-rag/symmetric_latent_rag/data/states/doc-14_0.pt"
+  },
+  "9": {
+    "id": "doc-14:1",
+    "doc_id": "doc-14",
+    "text": "although some countries or cities use other colors",
+    "state_path": "/Users/georgetrump/Visual Studio Code/symmetric-latent-rag/symmetric_latent_rag/data/states/doc-14_1.pt"
+  },
+  "10": {
+    "id": "doc-14:2",
+    "doc_id": "doc-14",
+    "text": "other colors such as yellow or lime for",
+    "state_path": "/Users/georgetrump/Visual Studio Code/symmetric-latent-rag/symmetric_latent_rag/data/states/doc-14_2.pt"
+  },
+  "11": {
+    "id": "doc-14:3",
+    "doc_id": "doc-14",
+    "text": "lime for visibility.",
+    "state_path": "/Users/georgetrump/Visual Studio Code/symmetric-latent-rag/symmetric_latent_rag/data/states/doc-14_3.pt"
+  }
+}
