@@ -1,8 +1,11 @@
 """
-evaluate.py - Evaluate the persisted-index RAG baseline on a local QA dataset.
+evaluate.py - Evaluate RAG pipeline on a local QA dataset.
 
 Usage:
-    python3 evaluate.py --index_dir artifacts/index --eval_path data/eval.jsonl
+    python3 evaluate.py --index_dir artifacts/index_bge --eval_path data/eval.jsonl --mode bge+text
+    python3 evaluate.py --index_dir artifacts/index_bge --eval_path data/eval.jsonl --mode bge+latent
+    python3 evaluate.py --index_dir artifacts/index_latent --eval_path data/eval.jsonl --mode t5+text
+    python3 evaluate.py --index_dir artifacts/index_latent --eval_path data/eval.jsonl --mode t5+latent
 """
 from __future__ import annotations
 
@@ -18,10 +21,16 @@ from tqdm import tqdm
 
 from metrics import exact_match, recall_at_k, token_f1
 from pipeline import (
-    DEFAULT_GENERATOR_MODEL,
+    DEFAULT_TEXT_GENERATOR,
+    DEFAULT_LATENT_GENERATOR,
     DEFAULT_MAX_NEW_TOKENS,
     DEFAULT_TOP_K,
+    BGERTRetriever,
+    LatentGenerator,
+    LatentRetriever,
     RAGPipeline,
+    TextGenerator,
+    load_index_config,
 )
 
 QUESTION_FIELD = "question"
@@ -111,9 +120,47 @@ def aggregate_metrics(
     return aggregate
 
 
+def build_pipeline(
+    mode: str,
+    index_dir: str | Path,
+    generator_model: str | None,
+    top_k: int,
+    max_new_tokens: int,
+    seed: int,
+) -> tuple[RAGPipeline, IndexConfig]:
+    index_config = load_index_config(index_dir)
+
+    if mode.startswith("bge"):
+        retriever = BGERTRetriever()
+        retriever.load(index_dir)
+    elif mode.startswith("t5"):
+        retriever = LatentRetriever()
+        retriever.load(index_dir)
+    else:
+        raise ValueError(f"Unknown mode: {mode}")
+
+    if mode.endswith("+text"):
+        gen_model = generator_model or DEFAULT_TEXT_GENERATOR
+        generator = TextGenerator(generator_model=gen_model, max_new_tokens=max_new_tokens)
+    elif mode.endswith("+latent"):
+        gen_model = generator_model or DEFAULT_LATENT_GENERATOR
+        generator = LatentGenerator(generator_model=gen_model, max_new_tokens=max_new_tokens)
+    else:
+        raise ValueError(f"Unknown mode: {mode}")
+
+    pipeline = RAGPipeline(retriever=retriever, generator=generator, top_k=top_k, seed=seed)
+    return pipeline, index_config
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--eval_path", required=True, help="Local .jsonl or .json QA dataset")
+    parser.add_argument("--eval_path", required=True, help="Local .jsonl QA dataset")
+    parser.add_argument(
+        "--mode",
+        choices=("bge+text", "bge+latent", "t5+text", "t5+latent"),
+        default="bge+text",
+        help="Pipeline mode: retriever+generator combination",
+    )
     parser.add_argument(
         "--retrieval_id_field",
         choices=("source_doc_id", "passage_id"),
@@ -123,7 +170,7 @@ def main() -> None:
     parser.add_argument("--max_samples", type=int, default=None)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--index_dir", required=True)
-    parser.add_argument("--generator_model", default=DEFAULT_GENERATOR_MODEL)
+    parser.add_argument("--generator_model", default=None)
     parser.add_argument("--top_k", type=int, default=DEFAULT_TOP_K)
     parser.add_argument("--max_new_tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS)
     parser.add_argument("--results_dir", default="results")
@@ -151,16 +198,17 @@ def main() -> None:
         raise ValueError(f"No valid evaluation samples were loaded from {eval_path}.")
     print(f"Loaded {len(samples)} samples from {eval_path}")
 
-    pipeline = RAGPipeline(
+    pipeline, index_config = build_pipeline(
+        mode=args.mode,
         index_dir=index_dir,
-        seed=args.seed,
         generator_model=args.generator_model,
         top_k=args.top_k,
         max_new_tokens=args.max_new_tokens,
+        seed=args.seed,
     )
     print(
-        f"Loaded index with {pipeline.index_config.passage_count} passages "
-        f"from {pipeline.index_config.corpus_path}"
+        f"Pipeline mode: {args.mode} | "
+        f"Index: {index_config.passage_count} passages from {index_config.corpus_path}"
     )
 
     use_passage_ids = args.retrieval_id_field == "passage_id"
@@ -176,7 +224,11 @@ def main() -> None:
         result = pipeline.run(sample["query"])
         per_query_latency_ms.append(result.total_time_s * 1000.0)
 
-        retrieved_ids = result.retrieved_passage_ids if use_passage_ids else list(dict.fromkeys(result.retrieved_source_doc_ids))
+        retrieved_ids = (
+            result.retrieved_passage_ids
+            if use_passage_ids
+            else list(dict.fromkeys(result.retrieved_source_doc_ids))
+        )
         metric_row = {
             "em": exact_match(result.answer, sample["answers"]),
             "f1": token_f1(result.answer, sample["answers"]),
@@ -215,10 +267,11 @@ def main() -> None:
 
     results_dir = Path(args.results_dir)
     results_dir.mkdir(parents=True, exist_ok=True)
-    out_path = results_dir / f"results_{eval_path.stem}_{datetime.now():%Y%m%d_%H%M%S}.json"
+    out_path = results_dir / f"results_{eval_path.stem}_{args.mode}_{datetime.now():%Y%m%d_%H%M%S}.json"
     payload = {
         "config": {
             "eval_path": str(eval_path),
+            "mode": args.mode,
             "retrieval_id_field": args.retrieval_id_field,
             "max_samples": args.max_samples,
             "seed": args.seed,
@@ -226,7 +279,7 @@ def main() -> None:
             "top_k": args.top_k,
             "max_new_tokens": args.max_new_tokens,
             "generator_model": args.generator_model,
-            "index": asdict(pipeline.index_config),
+            "index": asdict(index_config),
             "bertscore_enabled": use_bertscore,
         },
         "metrics": aggregate,

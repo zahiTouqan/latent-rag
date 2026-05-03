@@ -2,7 +2,8 @@
 build_index.py - Build and persist a FAISS passage index.
 
 Usage:
-    python3 build_index.py --corpus_path data/passages.jsonl --index_dir artifacts/index
+    python3 build_index.py --corpus_path data/passages.jsonl --index_dir artifacts/index --retriever_type bge
+    python3 build_index.py --corpus_path data/passages.jsonl --index_dir artifacts/index_latent --retriever_type latent
 """
 from __future__ import annotations
 
@@ -11,7 +12,13 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from pipeline import DEFAULT_EMBEDDING_MODEL, Passage, Retriever
+from pipeline import (
+    DEFAULT_BGE_MODEL,
+    DEFAULT_LATENT_MODEL,
+    BGERTRetriever,
+    LatentRetriever,
+    Passage,
+)
 
 
 @dataclass
@@ -69,10 +76,21 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--corpus_path", required=True, help="Passage JSONL with fields id, text, and optional doc_id")
     parser.add_argument("--index_dir", default="artifacts/index")
-    parser.add_argument("--embedding_model", default=DEFAULT_EMBEDDING_MODEL)
-    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument(
+        "--retriever_type",
+        choices=("bge", "latent"),
+        default="bge",
+        help="Retriever type to build index for",
+    )
+    parser.add_argument("--embedding_model", default=None)
+    parser.add_argument("--batch_size", type=int, default=None)
     parser.add_argument("--max_docs", type=int, default=None)
     args = parser.parse_args()
+
+    if args.embedding_model is None:
+        args.embedding_model = DEFAULT_BGE_MODEL if args.retriever_type == "bge" else DEFAULT_LATENT_MODEL
+    if args.batch_size is None:
+        args.batch_size = 256 if args.retriever_type == "bge" else 64
 
     corpus_path = Path(args.corpus_path)
     if corpus_path.suffix.lower() != ".jsonl":
@@ -87,11 +105,15 @@ def main() -> None:
     print(f"Loaded {len(passages)} passages from {corpus_path}")
     if stats.doc_id_missing_count:
         print(
-            "Warning: "
-            f"{stats.doc_id_missing_count} passages are missing doc_id. "
+            f"Warning: {stats.doc_id_missing_count} passages are missing doc_id. "
             "Document-level recall may be inaccurate unless the corpus provides explicit doc_id values."
         )
-    retriever = Retriever(embedding_model=args.embedding_model)
+
+    if args.retriever_type == "bge":
+        retriever = BGERTRetriever(embedding_model=args.embedding_model)
+    else:
+        retriever = LatentRetriever(embedding_model=args.embedding_model)
+
     retriever.build_index(passages, batch_size=args.batch_size)
     retriever.save(
         index_dir=args.index_dir,
@@ -100,7 +122,7 @@ def main() -> None:
         doc_id_provided_count=stats.doc_id_provided_count,
         doc_id_missing_count=stats.doc_id_missing_count,
     )
-    print(f"Saved index to {args.index_dir}")
+    print(f"Saved {args.retriever_type} index to {args.index_dir}")
 
 
 if __name__ == "__main__":
