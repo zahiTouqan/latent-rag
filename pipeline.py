@@ -15,8 +15,6 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-import faiss
-import numpy as np
 import torch
 import torch.nn.functional as F
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
@@ -70,7 +68,6 @@ def load_index_config(index_dir: str | Path) -> IndexConfig:
 
 def set_seed(seed: int = SEED) -> None:
     random.seed(seed)
-    np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
@@ -105,17 +102,20 @@ class Retriever:
         full_model = AutoModelForSeq2SeqLM.from_pretrained(embedding_model, torch_dtype=dtype)
         self.model = _load_to_device(full_model.get_encoder(), "embedding encoder").eval()
         
-        self.index: faiss.IndexFlatIP | None = None
         self.passages: list[Passage] = []
         self.all_latents: dict[str, torch.Tensor] = {}
         self.latent_file: str | None = None
+        self.raw_latents_cpu: list[torch.Tensor] = []
 
     @torch.no_grad()
-    def _embed(self, texts: list[str]) -> tuple[np.ndarray, list[torch.Tensor]]:
-        # T5-style prompt or raw text
+    def _embed(self, texts: list[str], is_query: bool = False) -> list[torch.Tensor]:
         device = next(self.model.parameters()).device
+        # Add task prefixes to help the generative encoder align search concepts
+        prefix = "Query: " if is_query else "Document: "
+        prefixed_texts = [prefix + t for t in texts]
+        
         encoded = self.tokenizer(
-            texts,
+            prefixed_texts,
             padding=True,
             truncation=True,
             max_length=512,
@@ -124,23 +124,15 @@ class Retriever:
         
         outputs = self.model(**encoded)
         latents = outputs.last_hidden_state.cpu()
-        attention_mask = encoded["attention_mask"].cpu()
+        attention_mask = encoded["attention_mask"].cpu().bool()
 
-        faiss_vecs = []
         saved_latents = []
-        
         for i in range(len(texts)):
-            # Strip padding tokens out of the sequence representation
-            seq_len = attention_mask[i].sum().item()
-            true_latents = latents[i, :seq_len, :]
+            # Robustly extract only valid text tokens using the boolean mask (fixes left-padding bugs)
+            true_latents = latents[i][attention_mask[i]]
             saved_latents.append(true_latents)
-            
-            # Mean pool for FAISS search compatibility
-            mean_pooled = true_latents.mean(dim=0).unsqueeze(0)
-            faiss_vec = F.normalize(mean_pooled, p=2, dim=-1).float().numpy()
-            faiss_vecs.append(faiss_vec)
 
-        return np.concatenate(faiss_vecs, axis=0), saved_latents
+        return saved_latents
 
     def build_index(self, passages: list[Passage], batch_size: int = 256) -> None:
         if not passages:
@@ -150,23 +142,17 @@ class Retriever:
         n_batches = (len(passages) + batch_size - 1) // batch_size
         print(f"Embedding {len(passages)} passages ({n_batches} batches)...")
         
-        all_embeddings = []
         self.all_latents = {}
         
         for i, start in enumerate(range(0, len(passages), batch_size)):
             batch = passages[start : start + batch_size]
-            faiss_batch, latents_batch = self._embed([passage.text for passage in batch])
-            all_embeddings.append(faiss_batch)
+            latents_batch = self._embed([passage.text for passage in batch], is_query=False)
             
             for p, lat in zip(batch, latents_batch):
                 self.all_latents[p.passage_id] = lat
                 
             if (i + 1) % 10 == 0 or i + 1 == n_batches:
                 print(f"  batch {i + 1}/{n_batches}")
-                
-        embeddings = np.concatenate(all_embeddings, axis=0)
-        self.index = faiss.IndexFlatIP(embeddings.shape[1])
-        self.index.add(embeddings)
 
     def save(
         self,
@@ -176,13 +162,9 @@ class Retriever:
         doc_id_provided_count: int | None = None,
         doc_id_missing_count: int | None = None,
     ) -> None:
-        if self.index is None:
-            raise ValueError("Index has not been built yet.")
-
         index_dir = Path(index_dir)
         index_dir.mkdir(parents=True, exist_ok=True)
 
-        faiss.write_index(self.index, str(index_dir / "index.faiss"))
         with (index_dir / "metadata.jsonl").open("w", encoding="utf-8") as handle:
             for passage in self.passages:
                 handle.write(json.dumps(asdict(passage), ensure_ascii=True) + "\n")
@@ -204,18 +186,14 @@ class Retriever:
 
     def load(self, index_dir: str | Path) -> IndexConfig:
         index_dir = Path(index_dir)
-        index_path = index_dir / "index.faiss"
         metadata_path = index_dir / "metadata.jsonl"
         self.latent_file = str(index_dir / "latents.safetensors")
 
-        if not index_path.exists():
-            raise FileNotFoundError(f"FAISS index not found: {index_path}")
         if not metadata_path.exists():
             raise FileNotFoundError(f"Metadata file not found: {metadata_path}")
         if not Path(self.latent_file).exists():
             raise FileNotFoundError(f"Safetensors latents not found: {self.latent_file}")
 
-        self.index = faiss.read_index(str(index_path))
         self.passages = []
         with metadata_path.open(encoding="utf-8") as handle:
             for line in handle:
@@ -224,33 +202,71 @@ class Retriever:
 
         config = load_index_config(index_dir)
 
-        if self.index.ntotal != len(self.passages):
+        # Pre-load all latents into CPU RAM for fast in-memory ColBERT batched search
+        print("Loading sequence latents into RAM for exhaustive MaxSim search...")
+        self.raw_latents_cpu = []
+        with safe_open(self.latent_file, framework="pt", device="cpu") as f:
+            for p in self.passages:
+                self.raw_latents_cpu.append(f.get_tensor(p.passage_id))
+
+        if len(self.raw_latents_cpu) != len(self.passages):
             raise ValueError(
-                "Index and metadata size mismatch: "
-                f"index has {self.index.ntotal} rows but metadata has {len(self.passages)} passages."
+                "Metadata size mismatch: "
+                f"latents file has {len(self.raw_latents_cpu)} rows but metadata has {len(self.passages)} passages."
             )
         return config
 
     def retrieve(self, query: str, top_k: int) -> tuple[list[Passage], list[torch.Tensor], float]:
-        if self.index is None:
+        if not self.passages:
             raise ValueError("Retriever index is not loaded.")
         if top_k <= 0:
             raise ValueError("top_k must be positive.")
 
         t0 = time.perf_counter()
-        query_faiss, _ = self._embed([query])
-        _, indices = self.index.search(query_faiss, min(top_k, len(self.passages)))
-
-        passages = [self.passages[idx] for idx in indices[0] if idx != -1]
         device = next(self.model.parameters()).device
         
-        # Lazy load sequence matrices directly into VRAM to avoid OOM
-        latents_list = []
-        with safe_open(self.latent_file, framework="pt", device="cpu") as f:
-            for p in passages:
-                lat = f.get_tensor(p.passage_id).to(device)
-                latents_list.append(lat)
-                
+        # Embed query and normalize
+        query_latents = self._embed([query], is_query=True)[0].to(device).float()
+        q_norm = F.normalize(query_latents, p=2, dim=-1) # [q_len, hidden_dim]
+
+        CHUNK_SIZE = 1000
+        all_scores = []
+        
+        # ColBERT MaxSim Exhaustive Search via chunked PyTorch matrix operations
+        for i in range(0, len(self.raw_latents_cpu), CHUNK_SIZE):
+            chunk = self.raw_latents_cpu[i : i + CHUNK_SIZE]
+            
+            # Pad chunk into dense tensor
+            padded_chunk = torch.nn.utils.rnn.pad_sequence(chunk, batch_first=True).to(device).float() # [N, max_p_len, D]
+            padded_norm = F.normalize(padded_chunk, p=2, dim=-1)
+            
+            # Compute valid padding mask
+            lengths = torch.tensor([len(c) for c in chunk], device=device)
+            max_len = padded_chunk.shape[1]
+            mask = torch.arange(max_len, device=device).unsqueeze(0) < lengths.unsqueeze(1) # [N, max_p_len]
+            
+            # Compute token similarities: [N, q_len, p_len]
+            sim = torch.einsum('qd, npd -> nqp', q_norm, padded_norm)
+            
+            # Mask out invalid padding tokens (set similarities to very low number)
+            sim = sim.masked_fill(~mask.unsqueeze(1), -1e9)
+            
+            # MaxSim: max over passage tokens
+            max_sim, _ = sim.max(dim=2) # [N, q_len]
+            
+            # Sum over query tokens
+            scores = max_sim.sum(dim=1) # [N]
+            all_scores.append(scores.cpu())
+
+        all_scores = torch.cat(all_scores, dim=0)
+        top_scores, top_indices = torch.topk(all_scores, min(top_k, len(self.passages)))
+        
+        top_indices_list = top_indices.tolist()
+        passages = [self.passages[idx] for idx in top_indices_list]
+        
+        # Fetch the original, unmodified latents directly from memory for the generator
+        latents_list = [self.raw_latents_cpu[idx].to(device) for idx in top_indices_list]
+        
         elapsed = time.perf_counter() - t0
         return passages, latents_list, elapsed
 
