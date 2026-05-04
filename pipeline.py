@@ -387,6 +387,14 @@ class TextGenerator:
     def _render_prompt(self, query: str, passages: list[Passage]) -> str:
         context_blocks = [f"[{idx}] {p.text.strip()}" for idx, p in enumerate(passages, start=1)]
         context = "\n\n".join(context_blocks)
+        user_content = (
+            f"Answer the following question using only the provided context.\n"
+            f"If the answer is not supported by the context, say you do not know.\n\n"
+            f"Context:\n{context}\n\nQuestion: {query}"
+        )
+        if hasattr(self.tokenizer, "chat_template") and self.tokenizer.chat_template is not None:
+            messages = [{"role": "user", "content": user_content}]
+            return self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         return f"{PROMPT_PREFIX}{context}{PROMPT_SUFFIX_TEMPLATE.format(question=query)}"
 
     @torch.no_grad()
@@ -398,7 +406,7 @@ class TextGenerator:
     ) -> tuple[str, dict]:
         prompt = self._render_prompt(query, passages)
         device = next(self.model.parameters()).device
-        inputs = self.tokenizer(prompt, return_tensors="pt", truncation=False).to(device)
+        inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=4096).to(device)
         prompt_tokens = inputs["input_ids"].shape[-1]
         t0 = time.perf_counter()
         output_ids = self.model.generate(
@@ -461,33 +469,37 @@ class LatentGenerator:
         passage_latents: list[torch.Tensor] | None = None,
     ) -> tuple[str, dict]:
         device = next(self.model.parameters()).device
-        q_enc = self.tokenizer(f"Question: {query}", return_tensors="pt").to(device)
+        q_enc = self.tokenizer(
+            f"Answer the question using the context: {query}",
+            return_tensors="pt",
+            truncation=True,
+            max_length=512,
+        ).to(device)
         q_latents = self.model.get_encoder()(**q_enc).last_hidden_state[0]
         if passage_latents is None:
             passage_latents = [self._encode_passage(p) for p in passages]
         batch_latents = [q_latents] + passage_latents
         combined_latents = torch.cat(batch_latents, dim=0).unsqueeze(0)
-        start_token_id = getattr(self.model.config, "decoder_start_token_id", None)
-        if start_token_id is None:
-            start_token_id = getattr(self.model.config, "bos_token_id", self.tokenizer.pad_token_id)
-        decoder_input_ids = torch.tensor([[start_token_id]], device=device)
         encoder_outputs_obj = BaseModelOutput(last_hidden_state=combined_latents)
+        start_token_id = (
+            getattr(self.model.generation_config, "decoder_start_token_id", None)
+            or getattr(self.model.config, "decoder_start_token_id", None)
+            or self.tokenizer.pad_token_id
+        )
         t0 = time.perf_counter()
-        generated_tokens = 0
-        for _ in range(self.max_new_tokens):
-            outputs = self.model(
-                encoder_outputs=encoder_outputs_obj,
-                decoder_input_ids=decoder_input_ids,
-            )
-            next_token = torch.argmax(outputs.logits[:, -1, :], dim=-1).unsqueeze(-1)
-            decoder_input_ids = torch.cat([decoder_input_ids, next_token], dim=-1)
-            generated_tokens += 1
-            if next_token.item() == self.tokenizer.eos_token_id:
-                break
+        output_ids = self.model.generate(
+            encoder_outputs=encoder_outputs_obj,
+            decoder_input_ids=torch.tensor([[start_token_id]], device=device),
+            max_new_tokens=self.max_new_tokens,
+            do_sample=False,
+            no_repeat_ngram_size=3,
+            pad_token_id=self.tokenizer.pad_token_id,
+            eos_token_id=self.tokenizer.eos_token_id,
+        )
         generation_time = time.perf_counter() - t0
-        answer = self.tokenizer.decode(decoder_input_ids[0, 1:], skip_special_tokens=True).strip()
+        answer = self.tokenizer.decode(output_ids[0, 1:], skip_special_tokens=True).strip()
         stats = {
-            "generated_tokens": generated_tokens,
+            "generated_tokens": int(output_ids.shape[-1]) - 1,
             "generation_time_s": generation_time,
         }
         return answer, stats
