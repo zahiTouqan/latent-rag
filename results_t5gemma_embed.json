@@ -1,0 +1,3041 @@
+{
+  "config": {
+    "eval_path": "data/eval.jsonl",
+    "retrieval_id_field": "source_doc_id",
+    "max_samples": null,
+    "seed": 42,
+    "index_dir": "/content/index",
+    "top_k": 5,
+    "max_new_tokens": 128,
+    "generator_model": "google/t5gemma-2-270m-270m",
+    "index": {
+      "embedding_model": "google/t5gemma-2-270m-270m",
+      "corpus_path": "data/passages.jsonl",
+      "passage_count": 10010,
+      "max_docs": null,
+      "doc_id_provided_count": 10010,
+      "doc_id_missing_count": 0
+    },
+    "bertscore_enabled": false
+  },
+  "metrics": {
+    "em": 0.0,
+    "f1": 0.00640422609480871,
+    "retrieval_time_s": 3.0781437181999958,
+    "generation_time_s": 7.044724092280014,
+    "total_time_s": 10.174175778520004,
+    "generated_tokens": 111.32,
+    "latency_p50_ms": 11141.870656499976,
+    "latency_p95_ms": 11363.917050600037,
+    "recall@5": 0.4343916217334067
+  },
+  "examples": [
+    {
+      "query": "who sings does he love me with reba",
+      "gold_answers": [
+        "Linda Davis"
+      ],
+      "prediction": "-\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You:\n\nDocument: Does He Love You",
+      "retrieved_ids": [
+        "Love triangle",
+        "Does He Love You",
+        "Craig Bickhardt"
+      ],
+      "relevant_ids": [
+        "Does He Love You",
+        "Does He Love You",
+        "Red Sandy Spika dress of Reba McEntire",
+        "Greatest Hits Volume Two (Reba McEntire album)",
+        "Shoot for the Moon (album)"
+      ],
+      "recall_at_k": 0.25,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 11.609000372000082,
+      "generation_time_s": 8.399091111999951,
+      "total_time_s": 20.052408549000006,
+      "generated_tokens": 128
+    },
+    {
+      "query": "where do the great lakes meet the ocean",
+      "gold_answers": [
+        "the Saint Lawrence River"
+      ],
+      "prediction": "<unused6237> the Mississippi River).\n\n<unused6236>.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.\n\nDocument: The Great Lakes.",
+      "retrieved_ids": [
+        "Erie Canal",
+        "Continental Divide of the Americas",
+        "Borders of the oceans",
+        "New York (state)",
+        "Ship"
+      ],
+      "relevant_ids": [
+        "Great Lakes",
+        "Great Lakes",
+        "Great Lakes",
+        "Great Lakes",
+        "Lake Ontario",
+        "New York (state)"
+      ],
+      "recall_at_k": 0.3333333333333333,
+      "em": 0.0,
+      "f1": 0.034482758620689655,
+      "retrieval_time_s": 2.8720375870000225,
+      "generation_time_s": 7.766426839000019,
+      "total_time_s": 10.689013221999971,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when does the new my hero academia movie come out",
+      "gold_answers": [
+        "July 5 , 2018"
+      ],
+      "prediction": "<unused6236>. The film was released in Japan on October 10, 2018. The film was released in the United States on October 11, 2018. The film was released in the United States on October 11, 2018. The film was released in Japan on October 11, 2018. The film was released in Japan on October 11, 2018. The film was released in Japan on October 11, 2018. The film was released in Japan on October 11,",
+      "retrieved_ids": [
+        "My Hero Academia: Two Heroes",
+        "My Hero Academia",
+        "Uverworld"
+      ],
+      "relevant_ids": [
+        "My Hero Academia: Two Heroes",
+        "My Hero Academia",
+        "My Hero Academia: Two Heroes"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.029411764705882356,
+      "retrieval_time_s": 3.112211306000063,
+      "generation_time_s": 7.79730328200003,
+      "total_time_s": 10.958096000000069,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who was the creator of victoria 's secret",
+      "gold_answers": [
+        "Roy Raymond"
+      ],
+      "prediction": "<unused6237> of the company. The film was released in 1983. The film was a remake of the 1981 film \"The Secret Life of Victoria's Secret\" starring the same cast. The film was a success. The film was a success, but it was a flop. The film was a success, but it was a flop. The film was a flop. The film was a flop. The film was a flop. The film was a flop. The film was a flop. The film was a flop. The film was a flop. The film was a flop. The film was a flop.",
+      "retrieved_ids": [
+        "Victoria's Secret",
+        "G. V. Sudhakar Naidu",
+        "UnmAsked (Pretty Little Liars)",
+        "Riot House Records"
+      ],
+      "relevant_ids": [
+        "Victoria's Secret"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.2708056370000804,
+      "generation_time_s": 7.948455108000076,
+      "total_time_s": 11.265005726000027,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when did wesley leave last of the summer wine",
+      "gold_answers": [
+        "2002"
+      ],
+      "prediction": "<unused6237> of the Summer Wine\"\n\n<unused6236> of the Summer Wine. The series was a series of 10 episodes, with a total of 10 episodes. The series was produced by the BBC. The series was a series of 10 episodes, with a total of 10 episodes. The series was produced by the BBC. The series was a series of 10 episodes, with a total of 10 episodes. The series was produced by BBC. The series was a series of 10 episodes, with a total of 10 episodes. The series was produced by BBC. The series was a series",
+      "retrieved_ids": [
+        "Last of the Summer Wine",
+        "Bill Owen (actor)",
+        "Wyatt's Watchdogs",
+        "Last of the Summer Wine (series 3)"
+      ],
+      "relevant_ids": [
+        "Gordon Wharmby",
+        "Gordon Wharmby",
+        "Gordon Wharmby",
+        "Gordon Wharmby",
+        "Last of the Summer Wine",
+        "Last of the Summer Wine (series 2)",
+        "Not All Dogs Go to Heaven"
+      ],
+      "recall_at_k": 0.25,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.1630868790000477,
+      "generation_time_s": 8.064695793000055,
+      "total_time_s": 11.293242752999959,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who introduced the system of civil services in india",
+      "gold_answers": [
+        "Charles Cornwallis"
+      ],
+      "prediction": "<unused6237> was the first to be established. The Civil Service of India was established in 1919. The Civil Service of India was established in 1920. The Civil Service of India was established in 1921. The Civil Service of India was established in 1922. The Civil Service of India was established in 1923. The Civil Service of India was established in 1924. The Civil Service of India was established in 1925. The Civil Service of India was established in 1926. The Civil Service of India was established in",
+      "retrieved_ids": [
+        "Civil Services of India",
+        "Civil service",
+        "All India Services Act, 1951",
+        "Telangana State Public Service Commission"
+      ],
+      "relevant_ids": [
+        "Civil Services of India",
+        "Civil Services of India"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.9604082239999343,
+      "generation_time_s": 8.247313544000008,
+      "total_time_s": 11.279914984000015,
+      "generated_tokens": 128
+    },
+    {
+      "query": "southern soul was considered the sound of what independent record label",
+      "gold_answers": [
+        "Motown"
+      ],
+      "prediction": "<unused6237> and the Allman Brothers.\n\n<unused6236>.\n\nDocument: The New Orleans Soul Music: The New Orleans Soul Music: The New Orleans Soul Music was a genre of music that was popular in the 1960s and 1970s. It was a fusion of blues, soul, jazz, and R&B. The music was popular in the South, but it was not as popular in the North. The music was influenced by the music of the blues, jazz, and R&B. The music was popular in the South, but not as popular in the North.\n\nDocument: The New Orleans",
+      "retrieved_ids": [
+        "New York soul",
+        "Soul music",
+        "Motown",
+        "Capricorn Records"
+      ],
+      "relevant_ids": [
+        "Soul music",
+        "Motown",
+        "Soul music"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.884012638999934,
+      "generation_time_s": 8.430060928999978,
+      "total_time_s": 11.362942747000034,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who is the bad guy in lord of the rings",
+      "gold_answers": [
+        "Sauron"
+      ],
+      "prediction": "<unused6237>\n\n<unused6236> The film is a classic example of the \"The Lord of the Rings\" style of storytelling.\n\nThe film is a classic example of the \"The Lord of the Rings\" style of storytelling. The film is a classic example of the \"The Lord of the Rings\" style of storytelling. The film is a classic example of the \"The Lord of the Rings\" style of storytelling.",
+      "retrieved_ids": [
+        "Dark Lord",
+        "Myth of redemptive violence",
+        "Elijah Wood",
+        "Hey Ash, Whatcha Playin'?",
+        "Pirates of the Caribbean: Dead Man's Chest"
+      ],
+      "relevant_ids": [
+        "Sauron",
+        "Dark Lord",
+        "The Lord of the Rings: The Fellowship of the Ring",
+        "The Lord of the Rings (1978 film)",
+        "The Lord of the Rings",
+        "The Lord of the Rings (1981 radio series)",
+        "Inklings",
+        "The Lord of the Rings: Conquest",
+        "The Lord of the Rings: Conquest",
+        "The History of The Lord of the Rings"
+      ],
+      "recall_at_k": 0.1111111111111111,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.872900970999922,
+      "generation_time_s": 5.27618733700001,
+      "total_time_s": 8.197478907999994,
+      "generated_tokens": 81
+    },
+    {
+      "query": "where is the most distortion on a robinson projection",
+      "gold_answers": [
+        "close to the poles"
+      ],
+      "prediction": "<unused6237> the projection.\n\n<unused6236>. The projection is a good approximation of the ellipsoid. The projection is a good approximation of the ellipsoid. The projection is a good approximation of the ellipsoid. The projection is a good approximation of the ellipsoid. The projection is a good approximation of the ellipsoid. The projection is a good approximation of the ellipsoid. The projection is a good approximation of the ellipsoid. The projection is a good approximation of the ellipsoid. The projection is a good approximation of the ellipsoid. The projection is a good approximation of the ellipsoid. The projection is a good approximation of the ellipsoid. The projection is a good approximation of the ellipsoid. The",
+      "retrieved_ids": [
+        "Image stitching",
+        "Mercator projection",
+        "Transverse Mercator projection",
+        "Robinson projection",
+        "Wagner VI projection"
+      ],
+      "relevant_ids": [
+        "Robinson projection",
+        "Robinson projection"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.893048756999974,
+      "generation_time_s": 8.219497098000033,
+      "total_time_s": 11.157238300000017,
+      "generated_tokens": 128
+    },
+    {
+      "query": "what is the name of wonder womans mother",
+      "gold_answers": [
+        "Queen Hippolyta"
+      ],
+      "prediction": "<unused6237> age of 14.\n\n<unused6236>. Wonder Woman was a very young girl who was a very intelligent and intelligent woman. She was a very intelligent and intelligent woman. She was a very intelligent and intelligent woman. She was a very intelligent and intelligent woman. She was very intelligent and intelligent. She was very intelligent and intelligent. She was very intelligent and intelligent. She was very intelligent and intelligent. She was very intelligent and intelligent. She was very intelligent and intelligent. She was very intelligent and intelligent. She was very intelligent and intelligent. She was very intelligent and intelligent. She was very intelligent and intelligent. She was very intelligent and",
+      "retrieved_ids": [
+        "Metropolismania",
+        "Stevie Wonder",
+        "Qalandar Baba Auliya",
+        "Children of Ares",
+        "Flash in other media"
+      ],
+      "relevant_ids": [
+        "Wonder Woman",
+        "Wonder Girl"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8826968280000074,
+      "generation_time_s": 8.035657992999973,
+      "total_time_s": 10.963168564000057,
+      "generated_tokens": 128
+    },
+    {
+      "query": "which apostle had a thorn in his side",
+      "gold_answers": [
+        "Paul"
+      ],
+      "prediction": "<unused6237> people were not able to be a part of the church.\n\n<unused6236> the church.",
+      "retrieved_ids": [
+        "Four Upbuilding Discourses, 1844",
+        "Metropolismania",
+        "Efficacy of prayer",
+        "Thorn in the flesh",
+        "Abd-Allah ibn Ubayy"
+      ],
+      "relevant_ids": [
+        "Thorn in the flesh",
+        "Four Upbuilding Discourses, 1844",
+        "The Way International",
+        "Thorn in the flesh",
+        "The Thorn in Mrs. Rose's Side",
+        "Efficacy of prayer",
+        "George Harris (Queensland politician)",
+        "John Thorn (headmaster)",
+        "Caesarea Maritima"
+      ],
+      "recall_at_k": 0.375,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.11349313300002,
+      "generation_time_s": 1.1103142169999956,
+      "total_time_s": 4.269206768000004,
+      "generated_tokens": 19
+    },
+    {
+      "query": "where is each type of cartilage located in the body",
+      "gold_answers": [
+        "ear",
+        "nose",
+        "intervertebral discs",
+        "many other body components",
+        "bronchial tubes",
+        "rib cage"
+      ],
+      "prediction": "<unused6237> found in the shoulder, the cartilage is found in the shoulder joint.\n\n<unused6236> is a type of cartilage that is found in the shoulder. The cartilage is a thin layer of cartilage that is found in the joint. It is made up of cartilage, bone, cartilage, and connective tissue. The cartilage is a thin layer of connective tissue that is found in the joint. The cartilage is made up of cartilage, bone, and connective tissue. The cartilage is a thin layer of connective tissue that is found in the joint. The cartilage is made up of cartilage, bone, and connective tissue. The cartilage is a thin layer of connective tissue",
+      "retrieved_ids": [
+        "Artificial cartilage",
+        "Skeleton",
+        "Conch piercing",
+        "Hip",
+        "Shoulder arthritis"
+      ],
+      "relevant_ids": [
+        "Cartilage",
+        "Artificial cartilage",
+        "Rhinoplasty",
+        "Elastic cartilage",
+        "Elastic cartilage",
+        "Conch piercing",
+        "Cartilage conduction",
+        "Skeleton",
+        "Cartilage conduction",
+        "Cartilage",
+        "Collagen, type XXVII, alpha 1",
+        "Orbital piercing",
+        "Nose piercing",
+        "Cartilage conduction",
+        "Meckel's cartilage",
+        "Meckel's cartilage",
+        "Collagen, type XXVII, alpha 1",
+        "Fibrocartilage",
+        "Costochondral joint",
+        "Costochondral joint",
+        "Cartilage conduction"
+      ],
+      "recall_at_k": 0.23076923076923078,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8655639629999996,
+      "generation_time_s": 8.292739752000102,
+      "total_time_s": 11.20392774100003,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who wrote the song two out of three ai n 't bad",
+      "gold_answers": [
+        "Meat Loaf"
+      ],
+      "prediction": "Document: The Beatles: \"Two Out of Three Ain't Bad\"\nDocument: The Beatles: \"Two Out of Three Ain't Bad\" is a song by the Beatles. It was written by the band's lead singer John Lennon and was released in 1977. It was written in 1977 and was released in the United States. It was the first song to be released by the Beatles. It was written by Lennon and John Lennon. It was written in the same year as the song \"The Beatles' \"I'll Be Back\" and was written by the band's",
+      "retrieved_ids": [
+        "Bat Out of Hell",
+        "Two Out of Three Ain't Bad",
+        "You Took the Words Right Out of My Mouth",
+        "Sweet Lies (song)",
+        "Bat Out of Hell The Musical"
+      ],
+      "relevant_ids": [
+        "Two Out of Three Ain't Bad",
+        "Two Out of Three Ain't Bad",
+        "Bad for Good"
+      ],
+      "recall_at_k": 0.5,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.879260625000029,
+      "generation_time_s": 8.284736552000027,
+      "total_time_s": 11.21114286999989,
+      "generated_tokens": 128
+    },
+    {
+      "query": "where is human sperm stored in the body",
+      "gold_answers": [
+        "in the epididymis"
+      ],
+      "prediction": "2. The sperm cells are stored in the epididymis. The sperm cells are stored in the epididymis. The sperm cells are stored in the epididymis. The sperm cells are stored in the epididymis. The sperm cells are stored in the epididymis. The sperm cells are stored in the epididymis. The sperm cells are stored in the epididymis. The sperm cells are stored in the epididymis. The sperm cells are stored in the epididymis. The sperm cells are stored in the epididymis. The sperm cells are stored in",
+      "retrieved_ids": [
+        "Human penis",
+        "Sperm",
+        "Human Fertilisation and Embryology Act 1990",
+        "Insect morphology",
+        "Human fertilization"
+      ],
+      "relevant_ids": [
+        "Sperm",
+        "Spermatogenesis",
+        "Sperm",
+        "Epididymis"
+      ],
+      "recall_at_k": 0.3333333333333333,
+      "em": 0.0,
+      "f1": 0.05882352941176471,
+      "retrieval_time_s": 2.845417299000019,
+      "generation_time_s": 8.072195534000002,
+      "total_time_s": 10.962446247999992,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when did bat out of hell get released",
+      "gold_answers": [
+        "September 1977"
+      ],
+      "prediction": "<unused6237> the album was released.\n\n<unused6236> and the album was released in 1977. The album was a hit, but it was not a hit. The album was a hit, but it was not a hit. The album was a hit, but it was not a hit. The album was a hit, but it was not a hit. The album was a hit, but it was not a hit. The album was a hit, but it was not a hit. The album was a hit, but it was not a hit. The album was a hit, but it was not a hit. The album was a",
+      "retrieved_ids": [
+        "Meat Loaf",
+        "Bat Out of Hell",
+        "Bat Out of Hell III: The Monster Is Loose",
+        "Meat Loaf: To Hell and Back"
+      ],
+      "relevant_ids": [
+        "Bat Out of Hell",
+        "Bat Out of Hell",
+        "Bat Out of Hell"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.025316455696202535,
+      "retrieval_time_s": 2.959182989999931,
+      "generation_time_s": 7.794175913999993,
+      "total_time_s": 10.797248447000015,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when were manatees put on the endangered list",
+      "gold_answers": [
+        "1966"
+      ],
+      "prediction": "<unused6237> Endangered Species Act of 1973. The manatee is a species of marine mammal that is listed as threatened under the Endangered Species Act. The manatee is a species of marine mammal that is listed as endangered under the Endangered Species Act. The manatee is a species of marine mammal that is listed as threatened under the Endangered Species Act. The manatee is listed as a species of marine mammal under the Endangered Species Act. The manatee is listed as a species of marine mammal under the Endangered Species Act. The manatee is listed as a species of marine mammal under the Endangered Species Act. The manatee is listed as",
+      "retrieved_ids": [
+        "Environmental issues in Florida",
+        "Manatee conservation",
+        "Save the Manatee Club"
+      ],
+      "relevant_ids": [
+        "Manatee conservation",
+        "Manatee conservation",
+        "Manatee conservation"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.2210083039999517,
+      "generation_time_s": 7.79908718799993,
+      "total_time_s": 11.064947971000038,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when was the first manmade object sent into space",
+      "gold_answers": [
+        "3 October 1942"
+      ],
+      "prediction": "<unused6237> Proton launched the first spacecraft.\n\n<unused6236>. The spacecraft was the first spacecraft to orbit the moon. The spacecraft was launched from the International Space Station in 1969. The spacecraft was the first spacecraft to orbit the moon. The spacecraft was the first spacecraft to orbit the moon. The spacecraft was the first spacecraft to orbit the moon. The spacecraft was the first spacecraft to orbit the moon. The spacecraft was the first spacecraft to orbit the moon. The spacecraft was the first spacecraft to orbit the moon. The spacecraft was the first spacecraft to orbit the moon. The spacecraft was the first spacecraft to orbit the moon. The spacecraft was",
+      "retrieved_ids": [
+        "RD-0210",
+        "Elon Musk's Tesla Roadster",
+        "V-2 rocket",
+        "Outer space",
+        "Interplanetary mission"
+      ],
+      "relevant_ids": [
+        "Space exploration",
+        "Space exploration"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.2711620400000356,
+      "generation_time_s": 7.8150585399999954,
+      "total_time_s": 11.15714188800007,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who is the chief legal advisor to the government",
+      "gold_answers": [
+        "Law Officers of the Crown"
+      ],
+      "prediction": "<unused6236> is the Attorney General of the United States. The Attorney General is the head of the United States Department of Justice. The Attorney General is the head of the United States Department of Justice. The Attorney General is the head of the United States Department of Justice. The Attorney General is the head of the United States Department of Justice. The Attorney General is the head of the United States Department of Justice. The Attorney General is the head of the United States Department of Justice. The Attorney General is the head of the United States Department of Justice. The Attorney General is the head of the United States Department of Justice. The Attorney General is the",
+      "retrieved_ids": [
+        "Judiciary of Sweden",
+        "Attorney general",
+        "State constitutional officer",
+        "State attorney general",
+        "Attorney General of Zimbabwe"
+      ],
+      "relevant_ids": [
+        "Law Officers of the Crown"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.02127659574468085,
+      "retrieval_time_s": 3.0131682899999532,
+      "generation_time_s": 8.268034267999951,
+      "total_time_s": 11.342654257999925,
+      "generated_tokens": 128
+    },
+    {
+      "query": "what do they call snowboarders in johnny tsunami",
+      "gold_answers": [
+        "Urchins"
+      ],
+      "prediction": "<unused6237> friends.\n\n<unused6236> and he is a very happy to see his friend. Johnny is also a very happy to see his friend Sam. Johnny and Sam are very happy to see him. Johnny and Sam are very happy to see their friend, but Sam is very upset. Johnny is very upset that he is not allowed to go to the school. Johnny is very upset that he is not allowed to go to the school. Johnny is very upset that he is not allowed to go to the school. Johnny is very upset that he is not allowed to go to the school. Johnny is very upset that he is not allowed to go to the",
+      "retrieved_ids": [
+        "Johnny Tsunami",
+        "Metropolismania"
+      ],
+      "relevant_ids": [
+        "Johnny Tsunami",
+        "Johnny Tsunami",
+        "Johnny Tsunami",
+        "Johnny Tsunami"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.910183002999929,
+      "generation_time_s": 8.47754234499996,
+      "total_time_s": 11.43515881999997,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who is tanyas husband in real housewives of cheshire",
+      "gold_answers": [
+        "Phil Bardsley"
+      ],
+      "prediction": "the show.\n\n<unused6236>.\n\nThe show was a hit on the BBC One, and was a hit on ITV. The show was a hit on ITV, and was a hit on ITV. The show was a hit on ITV, and was a hit on ITV. The show was a hit on ITV, and was a hit on ITV. The show was a hit on ITV, and was a hit on ITV. The show was a hit on ITV, and was a hit on ITV. The show was a hit on ITV, and was a hit on ITV. The show was a hit on ITV, and was a hit on ITV",
+      "retrieved_ids": [
+        "Tanya Bardsley",
+        "The Real Housewives of Cheshire",
+        "The Real Housewives of Cheshire (series 1)",
+        "Ashley Ward"
+      ],
+      "relevant_ids": [
+        "Tanya Bardsley"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8928891610000846,
+      "generation_time_s": 8.368949770000086,
+      "total_time_s": 11.311983689000044,
+      "generated_tokens": 128
+    },
+    {
+      "query": "where are tight junctions found in the human body",
+      "gold_answers": [
+        "vertebrates"
+      ],
+      "prediction": "<unused6237> a major component of the tight junctions.\n\n<unused6236> junctions. The tight junctions are also found in the blood vessels of the brain and the blood vessels of the heart. The tight junctions are also found in the blood vessels of the heart and the blood vessels of the brain.",
+      "retrieved_ids": [
+        "Cell junction",
+        "Blood\u2013brain barrier",
+        "PKC alpha",
+        "Glia limitans",
+        "Claudin"
+      ],
+      "relevant_ids": [
+        "Tight junction",
+        "Tight junction",
+        "Tight junction",
+        "Gap junction",
+        "Cell junction"
+      ],
+      "recall_at_k": 0.3333333333333333,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8620476429999826,
+      "generation_time_s": 3.4759323270000095,
+      "total_time_s": 6.382974273999935,
+      "generated_tokens": 56
+    },
+    {
+      "query": "where was the mona lisa kept during ww2",
+      "gold_answers": [
+        "the Ingres Museum",
+        "Ch\u00e2teau d'Amboise",
+        "Ch\u00e2teau de Chambord",
+        "the Loc - Dieu Abbey"
+      ],
+      "prediction": "<unused6237> the painting was moved to the Louvre Museum in 1945. The painting was then moved to the Louvre Museum in Paris. The painting was then moved to the Louvre Museum in 1946. The painting was then moved to the Louvre Museum in 1947. The painting was then moved to the Louvre Museum in 1950. The painting was then moved to the Louvre Museum in 1951. The painting was then moved to the Louvre Museum in 1952. The painting was then moved to the Louvre Museum in 1952. The painting was then",
+      "retrieved_ids": [
+        "Albrecht Gaiswinkler",
+        "Mona Lisa",
+        "Scotland Yard Investigator",
+        "Mona Lisa (actress)"
+      ],
+      "relevant_ids": [
+        "Mona Lisa"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.025974025974025976,
+      "retrieval_time_s": 3.1039399809999395,
+      "generation_time_s": 7.716349395000066,
+      "total_time_s": 10.869431044999942,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who is the old man in waiting on a woman",
+      "gold_answers": [
+        "Andy Griffith"
+      ],
+      "prediction": "<unused6237> the market. The old man is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is a man who is",
+      "retrieved_ids": [
+        "Metropolismania",
+        "Yue Lao",
+        "Lysistrata",
+        "Baba Dochia",
+        "Waitin' on a Woman"
+      ],
+      "relevant_ids": [
+        "Waitin' on a Woman",
+        "Waitin' on a Woman"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.3056819030000497,
+      "generation_time_s": 7.7883968150000555,
+      "total_time_s": 11.141330626000013,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who have won the world cup the most times",
+      "gold_answers": [
+        "Brazil"
+      ],
+      "prediction": "<unused6237> times.\n\n<unused6236>.",
+      "retrieved_ids": [
+        "Staffordshire Senior Cup",
+        "Ghana national football team",
+        "Asia Cup",
+        "Football in Trinidad and Tobago",
+        "England at the Rugby World Cup"
+      ],
+      "relevant_ids": [
+        "FIFA World Cup",
+        "Brazil",
+        "Roma\u0301rio",
+        "Uruguay",
+        "Argentina at the FIFA World Cup",
+        "Argentina at the FIFA World Cup",
+        "Brazil\u2013Italy football rivalry",
+        "Football in Italy",
+        "Kuwait national football team",
+        "2014 FIFA World Cup knockout stage"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.19806609200009,
+      "generation_time_s": 0.5756054890000541,
+      "total_time_s": 3.8316705259999253,
+      "generated_tokens": 7
+    },
+    {
+      "query": "who sang the original version of true colors",
+      "gold_answers": [
+        "Cyndi Lauper"
+      ],
+      "prediction": "<unused6237> the show.\n\n<unused6236>. The song was a hit number 1 on the UK Singles Chart. The song was also featured on the soundtrack of the film \"The Greatest Show\". The song was also featured in the soundtrack of the film \"The Greatest Show\". The song was also featured in the soundtrack of the film \"The Greatest Show\".\n\nDocument: The song was a hit number 1 on the UK Singles Chart. The song was also featured in the soundtrack of the film \"The Greatest Show\". The song was also featured in the soundtrack of the film \"The Greatest Show\". The song was also featured in the soundtrack of the",
+      "retrieved_ids": [
+        "True Colors (Cyndi Lauper song)",
+        "67th Tony Awards",
+        "Ruth Lorenzo",
+        "Michelle Chamuel",
+        "Saara Aalto"
+      ],
+      "relevant_ids": [
+        "True Colors (Cyndi Lauper song)",
+        "True Colors (Cyndi Lauper song)",
+        "True Colors (Cyndi Lauper song)",
+        "67th Tony Awards",
+        "Michelle Chamuel",
+        "Brother Leo (musician)",
+        "Grace VanderWaal",
+        "Jotdog (album)",
+        "True Colors (Cyndi Lauper album)",
+        "True Colors (Cyndi Lauper album)",
+        "True Colors Fund",
+        "True Colors Fund",
+        "Cyndi Lauper"
+      ],
+      "recall_at_k": 0.3333333333333333,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.903594623999993,
+      "generation_time_s": 8.073072905999993,
+      "total_time_s": 11.023084455000003,
+      "generated_tokens": 128
+    },
+    {
+      "query": "what is the horses name in never-ending story",
+      "gold_answers": [
+        "Artax"
+      ],
+      "prediction": "<unused6236> the character is a character who is a character in the series. The character is a character who is a character in the series. The character is a character in the series. The character is a character in the series. The character is a character in the series. The character is a character in the series. The character is a character in the series. The character is a character in the series. The character is a character in the series. The character is a character in the series. The character is a character in the series. The character is a character in the series. The character is a character in the series. The",
+      "retrieved_ids": [
+        "The NeverEnding Story (film)",
+        "Contemplation (short story collection)",
+        "Story arc",
+        "Snake Jailbird",
+        "Curly Horse"
+      ],
+      "relevant_ids": [
+        "The NeverEnding Story (film)"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.117787237000016,
+      "generation_time_s": 7.774081655000032,
+      "total_time_s": 10.95209958199996,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who made the first telephone in the world",
+      "gold_answers": [
+        "Alexander Graham Bell"
+      ],
+      "prediction": "<unused6237> the first telephone was invented.\n\n<unused6236> the first telephone was invented.\n\nDocument: The first telephone was invented in 1878.\n\nDocument: The first telephone was invented in 1878.\n\nDocument: The first telephone was invented in 1878.\n\nDocument: The first telephone was invented in 1878.\n\nDocument: The first telephone was invented in 1878.\n\nDocument: The first telephone was invented in 1878.\n\nDocument: The first telephone was invented in 1878.\n\nDocument: The first telephone was invented",
+      "retrieved_ids": [
+        "Hugh Cossart Baker Jr.",
+        "History of technology",
+        "Telephony in Greater Manchester",
+        "Choctaw code talkers",
+        "History of Hamilton, Ontario"
+      ],
+      "relevant_ids": [
+        "Alexander Graham Bell",
+        "Telephone call",
+        "Telephony in Greater Manchester",
+        "History of technology",
+        "History of the telephone",
+        "Amos Dolbear"
+      ],
+      "recall_at_k": 0.3333333333333333,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.315203526999994,
+      "generation_time_s": 7.796098563999976,
+      "total_time_s": 11.157335183999976,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who is charles off of pretty little liars",
+      "gold_answers": [
+        "Drake",
+        "CeCe"
+      ],
+      "prediction": ".\n\nDocument: Pretty Little Liars (season 6): the Liars: The Liars (season 6)\n\nDocument: Pretty Little Liars (season 6): the Liars (season 6)\n\nDocument: Pretty Little Liars (season 6): the Liars (season 6)\n\nDocument: Pretty Little Liars (season 6): the Liars (season 6)\n\nDocument: Pretty Little Liars (season 6): the Liars (season 6)\n\nDocument: Pretty Little Liars (season 6): the Liars (season 6)\n\nDocument:",
+      "retrieved_ids": [
+        "Metropolismania",
+        "Game On, Charles",
+        "Pretty Little Liars (season 6)",
+        "Red Coat (Pretty Little Liars)"
+      ],
+      "relevant_ids": [
+        "Charlotte Drake",
+        "Red Coat (Pretty Little Liars)",
+        "Alex Drake (Pretty Little Liars)",
+        "Red Coat (Pretty Little Liars)",
+        "Alex Drake (Pretty Little Liars)",
+        "A (Pretty Little Liars)",
+        "Playtime (Pretty Little Liars)",
+        "Pretty Little Liars (season 6)",
+        "Alex Drake (Pretty Little Liars)",
+        "Mary Drake",
+        "Mary Drake"
+      ],
+      "recall_at_k": 0.2857142857142857,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.1312275849999196,
+      "generation_time_s": 8.029197811000017,
+      "total_time_s": 11.230781215999968,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who got pregnant in gossip girl season 5",
+      "gold_answers": [
+        "Blair"
+      ],
+      "prediction": "<unused6237> and the show's lead character.\n\n<unused6236> and the show's lead character.",
+      "retrieved_ids": [
+        "Gossip Girl (season 5)",
+        "HelenaMaria"
+      ],
+      "relevant_ids": [
+        "Blair Waldorf",
+        "Gossip Girl (season 2)",
+        "Gossip Girl",
+        "Gossip Girl (season 5)",
+        "Gossip Girl (season 1)",
+        "Double Identity (Gossip Girl)",
+        "Double Identity (Gossip Girl)",
+        "The Thin Line Between Chuck and Nate",
+        "Gossip Girl (season 5)",
+        "Gossip Girl",
+        "Gossip Girl (season 4)",
+        "The Debarted (Gossip Girl)",
+        "The Debarted (Gossip Girl)",
+        "Gossip Girl (season 2)",
+        "Gossip Girl: Thailand",
+        "Gossip Girl (season 6)",
+        "The Goodbye Gossip Girl",
+        "Gossip Girl",
+        "Gossip Girl",
+        "Gossip Girl (season 4)",
+        "The Goodbye Gossip Girl",
+        "The Goodbye Gossip Girl",
+        "G.G. (Gossip Girl)",
+        "The Freshman (Gossip Girl)",
+        "The Lost Boy (Gossip Girl)",
+        "The Goodbye Gossip Girl",
+        "The Wrong Goodbye (Gossip Girl)",
+        "The Lost Boy (Gossip Girl)",
+        "Dan Humphrey",
+        "Gossip Girl (season 5)",
+        "Gossip Girl",
+        "Yes, Then Zero"
+      ],
+      "recall_at_k": 0.05555555555555555,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.943924407000054,
+      "generation_time_s": 1.4817291909999994,
+      "total_time_s": 4.493346755000061,
+      "generated_tokens": 20
+    },
+    {
+      "query": "where is the new england patriots stadium located",
+      "gold_answers": [
+        "Foxborough , Massachusetts"
+      ],
+      "prediction": "<unused6237>. The stadium was named after the Patriots owner of the Patriots.\n\n<unused6236>. The stadium was built in 1971. The stadium was named after the Patriots owner of the Patriots, and the Patriots. The stadium was named after the Patriots. The stadium was named after the Patriots owner of the Patriots. The stadium was named after the Patriots. The stadium was named after the Patriots owner of the Patriots. The stadium was named after the Patriots. The stadium was named after the Patriots. The stadium was named after the Patriots. The stadium was named after the Patriots. The stadium was named after the Patriots. The stadium was named",
+      "retrieved_ids": [
+        "Greater Hartford",
+        "History of the New England Patriots",
+        "Patriot Place",
+        "Gillette Stadium"
+      ],
+      "relevant_ids": [
+        "Gillette Stadium",
+        "New England Patriots",
+        "Gillette Stadium",
+        "Patriot Place",
+        "1999 New England Patriots season",
+        "New England Revolution",
+        "1999 New England Patriots season",
+        "Gillette Stadium",
+        "1971 New England Patriots season",
+        "History of the New England Patriots",
+        "Foxboro Stadium",
+        "Foxboro Stadium",
+        "Patriot Place",
+        "Bay State Raceway",
+        "New England Patriots",
+        "Tuck Rule Game",
+        "Snowplow Game",
+        "Snowplow Game",
+        "1997 Pittsburgh Steelers season",
+        "2010\u201313 Colonial Athletic Association realignment"
+      ],
+      "recall_at_k": 0.23076923076923078,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.0132403089999116,
+      "generation_time_s": 7.862492760999999,
+      "total_time_s": 10.921030817999963,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who played jason in friday the 13th part 1",
+      "gold_answers": [
+        "Ari Lehman"
+      ],
+      "prediction": "the only person who was able to get the job.\n\n<unused6236> was a stuntman and was a member of the \"Friday the 13th\" cast. He was a stuntman and stunt double. He was a stuntman and stunt double. He was a stuntman and stunt double. He was a stuntman and stunt double. He was a stuntman and stunt double. He was a stuntman and stunt double. He was a stuntman and stunt double. He was a stuntman and stunt double. He was a stuntman and stunt double. He was a stuntman and stunt double. He was a stuntman",
+      "retrieved_ids": [
+        "Friday the 13th Part 2",
+        "Friday the 13th Part VIII: Jason Takes Manhattan",
+        "Richard Brooker",
+        "Friday the 13th Part VI: Jason Lives"
+      ],
+      "relevant_ids": [
+        "Jason Voorhees",
+        "Jason Voorhees",
+        "Friday the 13th (franchise)"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.297266112999978,
+      "generation_time_s": 7.907137538000029,
+      "total_time_s": 11.264464388000079,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who won the pittsburgh steeler baltimore raven game",
+      "gold_answers": [
+        "Pittsburgh Steelers"
+      ],
+      "prediction": "<unused6237> of the Super Bowl.\n\n<unused6236> the New York Giants. The Raiders won the Super Bowl in 1996, defeating the New England Patriots 24-14. The Raiders won the Super Bowl in 1997, defeating the New York Giants 24-14.",
+      "retrieved_ids": [
+        "1969 American Football League Championship Game",
+        "Metropolismania",
+        "1994 New England Patriots season",
+        "Al Davis",
+        "History of the Baltimore Ravens"
+      ],
+      "relevant_ids": [
+        "Ravens\u2013Steelers rivalry",
+        "Jimmy Orr",
+        "Jimmy Orr",
+        "Carnell Lake",
+        "Kimo von Oelhoffen",
+        "Steeler (train)",
+        "Steeler Nation",
+        "Birmingham Stallions",
+        "Stan Humphries",
+        "Steeler Nation",
+        "Billy Gardell",
+        "Kevin Greene (American football)",
+        "Pittsburgh Steelers",
+        "The Chief (play)",
+        "1960 World Series",
+        "Steeler Nation",
+        "Tyler Palko",
+        "1942 Pittsburgh Steelers season",
+        "2007 Pittsburgh Steelers season",
+        "History of the Baltimore Colts",
+        "Bam Morris",
+        "Bam Morris",
+        "Super Bowl commercials",
+        "Al Davis",
+        "Jack Ham",
+        "Super Bowl XLVII",
+        "Pittsburgh Steelers Legends team",
+        "WRKW",
+        "DeAngelo Williams",
+        "History of the Baltimore Ravens",
+        "Jim Harbaugh",
+        "1969 American Football League Championship Game",
+        "Glen Edwards (American football)"
+      ],
+      "recall_at_k": 0.10344827586206896,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.2824263920000476,
+      "generation_time_s": 3.6439663290000226,
+      "total_time_s": 6.971651995999991,
+      "generated_tokens": 64
+    },
+    {
+      "query": "who wrote the song the beat goes on",
+      "gold_answers": [
+        "Sonny Bono"
+      ],
+      "prediction": "<unused6237> it was released in 1979.\n\n<unused6236> and was released as a single in the United States. The song was released in 1979. The song was released in the United States on the \"Billboard\" Hot 100 in 1979. The song was released in the United States on the \"Billboard\" Hot 100 in 1979. The song was released in the United States on the \"Billboard\" Hot 100 in 1979. The song was released in the United States on the \"Billboard\" Hot 100",
+      "retrieved_ids": [
+        "Tommy Stewart (trumpeter)",
+        "The Beat Goes On (Sonny & Cher song)",
+        "The Road Goes Ever On",
+        "And the Beat Goes On (The Whispers song)"
+      ],
+      "relevant_ids": [
+        "The Beat Goes On (Sonny & Cher song)",
+        "The Beat Goes On (Sonny & Cher song)",
+        "The Beat Goes On (Sonny & Cher song)",
+        "The Beat Goes On (Sonny & Cher song)"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8730861199999254,
+      "generation_time_s": 8.326387283000031,
+      "total_time_s": 11.244055353000022,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who won women 's cricket world cup 2016",
+      "gold_answers": [
+        "England"
+      ],
+      "prediction": "<unused6237> tournament.\n\n<unused6236>. She was the captain of the team. She was the captain of the team for the 2013 Women's World Cup. She was the captain of the team for the 2015 Women's World Cup. She was the captain of the team for the 2016 Women's World Cup. She was the captain of the team for the 2017 Women's World Cup. She was the captain of the team for the 2018 Women's World Cup. She was the captain of the team for the 2019",
+      "retrieved_ids": [
+        "Salma Khatun",
+        "Kenya women's national cricket team",
+        "Pakistan women's national cricket team",
+        "Beth Morgan (cricketer)",
+        "South Africa women's cricket team in England in 2018"
+      ],
+      "relevant_ids": [
+        "2017 Women's Cricket World Cup",
+        "Beth Morgan (cricketer)",
+        "England women's cricket team",
+        "Eden Gardens",
+        "History of the Pakistani cricket team",
+        "Kent Women cricket team",
+        "1979 Cricket World Cup",
+        "History of women's cricket",
+        "History of the ICC Cricket World Cup",
+        "2016 Under-19 Cricket World Cup",
+        "Lydia Greenway",
+        "1979 Cricket World Cup",
+        "1999 Cricket World Cup",
+        "1987 Cricket World Cup Final",
+        "South Africa women's cricket team in England in 2018",
+        "South Africa women's cricket team in England in 2018",
+        "1987 Cricket World Cup Final",
+        "1983 Cricket World Cup",
+        "Heather Knight (cricketer)",
+        "Chamari Atapattu",
+        "2009 Women's Cricket World Cup Final",
+        "1992 Cricket World Cup Final",
+        "2017 English cricket season",
+        "2009 Women's Cricket World Cup Final",
+        "Sport in India",
+        "Beth Morgan (cricketer)",
+        "Jagmohan Dalmiya",
+        "2018 Cricket World Cup Qualifier",
+        "ICC Cricket Hall of Fame",
+        "1987 Cricket World Cup",
+        "Recreation Ground, Banstead",
+        "Twenty20",
+        "Cricket World Cup",
+        "1973 Women's Cricket World Cup",
+        "India national cricket team",
+        "Cri-Zelda Brits",
+        "1987 Cricket World Cup knockout stage"
+      ],
+      "recall_at_k": 0.0625,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8505879550000373,
+      "generation_time_s": 8.365954602000102,
+      "total_time_s": 11.261398720999978,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who played v in the movie v for vendetta",
+      "gold_answers": [
+        "Hugo Weaving"
+      ],
+      "prediction": "<unused6237> character.\n\n<unused6236> was a character in the film.\n\nDocument: V for Vendetta (2006)\n\nDocument: V for Vendetta (2006)\n\nDocument: V for Vendetta (2006)\n\nDocument: V for Vendetta (2006)\n\nDocument: V for Vendetta (2006)\n\nDocument: V for Vendetta (2006)\n\nDocument: V for Vendetta (2006)\n\nDocument: V for Vendetta (2006)\n\nDocument: V for Vendetta (2006",
+      "retrieved_ids": [
+        "James Purefoy",
+        "V for Vendetta (film)",
+        "Rosa 'Violet Carson'",
+        "Mustafa Changazi",
+        "V (character)"
+      ],
+      "relevant_ids": [
+        "V for Vendetta (film)",
+        "V for Vendetta (film)",
+        "V for Vendetta (film)",
+        "V for Vendetta",
+        "Hugo Weaving",
+        "V (character)"
+      ],
+      "recall_at_k": 0.5,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8636997569999494,
+      "generation_time_s": 8.293738695999991,
+      "total_time_s": 11.202311255999916,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who wins the 2017 australian open men 's single title",
+      "gold_answers": [
+        "Roger Federer"
+      ],
+      "prediction": "[1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2012, 2013, 2013, 2014, 2014, 2015, 2015, 2",
+      "retrieved_ids": [
+        "2017 Australian Open \u2013 Men's singles final",
+        "2019 Australian Open \u2013 Men's Singles",
+        "2017 Australian Open Series",
+        "2017 Australian Open \u2013 Men's Singles"
+      ],
+      "relevant_ids": [
+        "2017 Australian Open \u2013 Men's Singles",
+        "2017 Australian Open",
+        "2019 Australian Open \u2013 Men's Singles",
+        "2019 Australian Open \u2013 Men's Singles",
+        "2008 US Open \u2013 Men's Singles",
+        "2014 ATP World Tour Finals",
+        "2017 Australian Open \u2013 Men's Singles",
+        "2018 Rafael Nadal tennis season",
+        "2017 Australian Open",
+        "Ivan Lendl",
+        "Saint-Barthe\u0301lemy, Switzerland",
+        "2009 in tennis",
+        "Pete Sampras"
+      ],
+      "recall_at_k": 0.2,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8749639369999613,
+      "generation_time_s": 8.033313164999981,
+      "total_time_s": 10.963333418999923,
+      "generated_tokens": 128
+    },
+    {
+      "query": "how many judges currently serve on the supreme court",
+      "gold_answers": [
+        "nine"
+      ],
+      "prediction": "<unused6237> the Supreme Court of the United States.\n\n<unused6236>.\n\nDocument: United States Supreme Court of the United States.\n\nDocument: United States Supreme Court of the United States.\n\nDocument: United States Supreme Court of the United States.\n\nDocument: United States Supreme Court of the United States.\n\nDocument: United States Supreme Court of the United States.\n\nDocument: United States Supreme Court of the United States.\n\nDocument: United States Supreme Court of the United States.\n\nDocument: United States Supreme Court of the United States.\n\nDocument: United States Supreme Court of the United States.\n\nDocument: United States Supreme Court of",
+      "retrieved_ids": [
+        "United States Court of Appeals for the First Circuit",
+        "University of Oxford",
+        "Kenneth Jernigan",
+        "Glidden Co. v. Zdanok",
+        "Senior status"
+      ],
+      "relevant_ids": [
+        "Supreme Court of the United States",
+        "Federal Supreme Court of Switzerland",
+        "Supreme Court of the Dominican Republic",
+        "Judiciary of Israel"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.084042846999978,
+      "generation_time_s": 7.761476420999998,
+      "total_time_s": 10.890069476999997,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who is the youngest judge currently sitting on the u.s. supreme court",
+      "gold_answers": [
+        "Neil Gorsuch"
+      ],
+      "prediction": "2016.\n\n<unused6236> on January 31, 2017. He was the first African-American to serve on the court. He was born in New York City, New York. He was the first African-American to be appointed to the Supreme Court. He was born in 1942. He was the first African-American to be appointed to the Supreme Court. He was the first African-American to be appointed to the Supreme Court. He was the first African-American to be appointed to the Supreme Court. He was the first African-American to be appointed to the Supreme Court",
+      "retrieved_ids": [
+        "Neil Gorsuch Supreme Court nomination",
+        "Demographics of the Supreme Court of the United States",
+        "Mary Yu",
+        "Jack Pope"
+      ],
+      "relevant_ids": [
+        "Supreme Court of the United States",
+        "Neil Gorsuch Supreme Court nomination",
+        "Neil Gorsuch Supreme Court nomination"
+      ],
+      "recall_at_k": 0.5,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.3555956970000125,
+      "generation_time_s": 7.769691387999956,
+      "total_time_s": 11.183057099000052,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who does the voice for love island australia",
+      "gold_answers": [
+        "Eoghan McDermott"
+      ],
+      "prediction": "<unused6237>\".\n\n<unused6236>, he has also hosted the show \"The Voice of Ireland\" on the BBC Radio 1. He is also a regular on the show \"The Voice of Ireland\" and has hosted the show \"The Voice of Ireland\" on the BBC Radio 1. He has also hosted the show \"The Voice of Ireland\" on the BBC Radio 1. He has also hosted the show \"The Voice of Ireland\" on the BBC Radio 1. He has also hosted the show \"The Voice of Ireland\" on the BBC Radio 1. He has hosted the show \"The Voice of Ireland\" on the BBC Radio",
+      "retrieved_ids": [
+        "Eoghan McDermott",
+        "Love Island Australia",
+        "John Deeks"
+      ],
+      "relevant_ids": [
+        "Love Island Australia",
+        "Eoghan McDermott",
+        "Love Island Australia",
+        "Love Island Australia",
+        "Eoghan McDermott"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.1779450889999907,
+      "generation_time_s": 8.010933224000041,
+      "total_time_s": 11.247511007000071,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when did beauty and the beast come out on dvd",
+      "gold_answers": [
+        "June 6 , 2017"
+      ],
+      "prediction": "<unused6236>.\n\nThe film was released on DVD on November 10, 2017. The film was released on Blu-ray and DVD on November 10, 2017. The film was released on Blu-ray and DVD on November 10, 2017. The film was released on Blu-ray and DVD on November 10, 2017. The film was released on Blu-ray and DVD on November 10, 2017. The film was released on Blu-ray and DVD on November 10, 2",
+      "retrieved_ids": [
+        "The Man Who Was Never Born",
+        "Beauty and the Beast (2017 film)",
+        "Beauty and the Beast (1987 TV series)",
+        "Beauty and the Beast (Stevie Nicks song)",
+        "All Out of Love (H & Claire song)"
+      ],
+      "relevant_ids": [
+        "Beauty and the Beast (2017 film)",
+        "Beauty and the Beast (2017 film)"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.029411764705882356,
+      "retrieval_time_s": 2.985906765999971,
+      "generation_time_s": 8.33847432999994,
+      "total_time_s": 11.382428819000097,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when was the last time the 76ers went to the finals",
+      "gold_answers": [
+        "2001"
+      ],
+      "prediction": "76ers were the only team to win the NBA championship.\n\n1982\u201383 Philadelphia 76ers season: The 1982\u201383 Philadelphia 76ers season: The 76ers won the NBA championship in the 1982\u201383 season. The 76ers won the NBA championship in the 1982\u201383 season. The 76ers won the NBA championship in the 1982\u201383 season. The 76ers won the NBA championship in the 1982\u201383 season",
+      "retrieved_ids": [
+        "2017\u201318 Philadelphia 76ers season",
+        "1983 NBA Finals",
+        "History of the Philadelphia 76ers",
+        "1982\u201383 Philadelphia 76ers season"
+      ],
+      "relevant_ids": [
+        "Philadelphia 76ers",
+        "1982\u201383 Philadelphia 76ers season",
+        "The Carter Effect",
+        "2001 NBA Playoffs",
+        "2001 NBA Playoffs",
+        "1986 NBA Playoffs",
+        "Philadelphia 76ers"
+      ],
+      "recall_at_k": 0.2,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.852350384999909,
+      "generation_time_s": 8.409720771000138,
+      "total_time_s": 11.313451493999992,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who wrote variations on twinkle twinkle little star",
+      "gold_answers": [
+        "Jane Taylor"
+      ],
+      "prediction": "<unused6237> song \"Twinkle, twinkle, little star\" (1810).\n\n<unused6236>, and the second, a song of the same tune, is \"Twinkle, twinkle, little star\". The song is a popular song that was written by the composer and composer of the 1830s. The song was written in the 1830s and was a popular song for children. The song was written in the style of the 1830s. The song was written in the style of the 1830s. The song was written in the style of the 18",
+      "retrieved_ids": [
+        "Chipping Ongar",
+        "Le tore\u0301ador",
+        "Variations on a Nursery Tune (Dohna\u0301nyi)",
+        "Jane Taylor (poet)",
+        "Variation (music)"
+      ],
+      "relevant_ids": [
+        "Twinkle, Twinkle, Little Star",
+        "Twinkle, Twinkle, Little Star",
+        "Twinkle, Twinkle, Little Star (Pinkney book)",
+        "Twinkle, Twinkle, Little Star (Pinkney book)",
+        "Jane Taylor (poet)",
+        "Jane Taylor (poet)",
+        "Twinkle, Twinkle, Little Star",
+        "Helen Taylor (writer)",
+        "Lavenham",
+        "Lessons for Children",
+        "Colchester",
+        "Chipping Ongar",
+        "Jane Taylor (poet)",
+        "Twinkle, Twinkle, Little Star",
+        "English folk music"
+      ],
+      "recall_at_k": 0.2222222222222222,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.871804011999984,
+      "generation_time_s": 8.399719492000031,
+      "total_time_s": 11.316234766999969,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when did the king kong ride burn down",
+      "gold_answers": [
+        "2008"
+      ],
+      "prediction": "<unused6237> the pier. The ride was the first of the three rides to be built in the park.\n\n<unused6236> Kong was the first ride to be built in the park. The ride was built in 1972. The ride was the first ride to be built in the park. The ride was built in 1972. The ride was built in 1972. The ride was built in 1972. The ride was built in 1972. The ride was built in 1972. The ride was built in 1972. The ride was built",
+      "retrieved_ids": [
+        "King Kong: 360 3-D",
+        "Restoration spectacular",
+        "KONG (ride)",
+        "King Kong"
+      ],
+      "relevant_ids": [
+        "King Kong Encounter",
+        "King Kong",
+        "King Kong: 360 3-D",
+        "King Kong",
+        "King Kong: 360 3-D"
+      ],
+      "recall_at_k": 0.6666666666666666,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8602360009999757,
+      "generation_time_s": 8.292630929000097,
+      "total_time_s": 11.197038778999968,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who plays mrs. potato head in toy story",
+      "gold_answers": [
+        "Estelle Harris"
+      ],
+      "prediction": "<unused6236> the character.\nDocument: Mr. Potato Head: \"Toy Story 3\" is a 2011 animated film directed by David L. S. Miller and written by David L. Miller and directed by David L. Miller. The film is based on the 1995 book by David L. Miller and is based on the 1995 book by David L. Miller. The film stars Jason Alexander, Jerry Stiller, Jason Alexander, and Tim Allen. The film is based on the 1995 book by David L. Miller. The film is based on the 1",
+      "retrieved_ids": [
+        "Toy Story 3",
+        "Estelle Harris",
+        "Mr. Potato Head"
+      ],
+      "relevant_ids": [
+        "Estelle Harris",
+        "Mr. Potato Head",
+        "Toy Story 3",
+        "Estelle Harris",
+        "Estelle Harris",
+        "Toy Story (franchise)"
+      ],
+      "recall_at_k": 0.75,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8618874210001195,
+      "generation_time_s": 8.204843411999946,
+      "total_time_s": 11.110465192999982,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who sang the original me and bobby mcgee",
+      "gold_answers": [
+        "Roger Miller"
+      ],
+      "prediction": "<unused6236> and \"The Last of the Dead\".",
+      "retrieved_ids": [
+        "If Not for You (album)",
+        "The War at Home (film)",
+        "Kris Kristofferson",
+        "Roger Miller"
+      ],
+      "relevant_ids": [
+        "Me and Bobby McGee",
+        "Me and Bobby McGee",
+        "Me and Bobby McGee",
+        "Would You Take Another Chance on Me?",
+        "Kris Kristofferson",
+        "Fred Foster",
+        "Me and Bobby McGee",
+        "Sit Down Young Stranger"
+      ],
+      "recall_at_k": 0.2,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8742361399999936,
+      "generation_time_s": 0.6149816199999805,
+      "total_time_s": 3.5364861569998993,
+      "generated_tokens": 11
+    },
+    {
+      "query": "who plays the fairy god mother in shrek 2",
+      "gold_answers": [
+        "Jennifer Saunders"
+      ],
+      "prediction": "<unused6237> role of the evil witch.\n\n<unused6236> in the film.\n\nDocument: The film \"Shrek 2\" is a 2004 animated film directed by Steven Spielberg. The film is based on the 1997 book by the same name. The film is based on the 1997 book by the same name. The film is based on the 1997 book by the same name.",
+      "retrieved_ids": [
+        "Rama Messinger",
+        "Wicked fairy godmother",
+        "Jennifer Saunders",
+        "Princess Fiona",
+        "Friar Tuck"
+      ],
+      "relevant_ids": [
+        "Shrek 2",
+        "Shrek 2",
+        "Shrek 2"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.906937025999923,
+      "generation_time_s": 5.886903221000011,
+      "total_time_s": 8.84064956400016,
+      "generated_tokens": 90
+    },
+    {
+      "query": "5 types of control that could be programmed on a gui",
+      "gold_answers": [
+        "Slider",
+        "Button",
+        "List box",
+        "Spinner",
+        "Drop - down list"
+      ],
+      "prediction": "and can be used to control a variety of devices.\n\n<unused6236>.\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:\n\nDocument:",
+      "retrieved_ids": [
+        "Pedal keyboard",
+        "Scripting language",
+        "Lighting control console",
+        "Fairchild F8",
+        "Fire alarm control panel"
+      ],
+      "relevant_ids": [
+        "Widget (GUI)",
+        "Lego Spybotics",
+        "Lighting control console",
+        "OpenSolaris"
+      ],
+      "recall_at_k": 0.25,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.897684947999778,
+      "generation_time_s": 8.35341539000001,
+      "total_time_s": 11.300826787000005,
+      "generated_tokens": 128
+    },
+    {
+      "query": "p diddy nicki minaj hello good morning lyrics",
+      "gold_answers": [
+        "Official Remix"
+      ],
+      "prediction": "<unused6237> Billboard Hot 100 chart at No. 10. The song was released on the album \"Hello Good Morning\" on June 17, 2010. The song was released as a single on the album \"Hello Good Morning\" on June 17, 2010. The song was released as a single on the album \"Hello Good Morning\" on June 17, 2010. The song was released as a single on the album \"Hello Good Morning\" on June 17, 2010. The song was released as a single on",
+      "retrieved_ids": [
+        "The Neptunes production discography",
+        "Hello Good Morning"
+      ],
+      "relevant_ids": [
+        "Hello Good Morning",
+        "Hello Good Morning",
+        "Hello Good Morning",
+        "Hello Good Morning",
+        "Hello Good Morning",
+        "All I Do Is Win"
+      ],
+      "recall_at_k": 0.5,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8918977799999084,
+      "generation_time_s": 8.284390852000115,
+      "total_time_s": 11.222345840999878,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who plays caroline on the bold and beautiful",
+      "gold_answers": [
+        "Linsey Godfrey"
+      ],
+      "prediction": "<unused6237>.\n\n<unused6236>. She also appeared in the film \"The Last of the Summer\". She was also in the film \"The Last of the Summer\". She was also in the film \"The Last of the Summer\". She was also in the film \"The Last of the Summer\". She appeared in the film \"The Last of the Summer\". She appeared in the film \"The Last of the Summer\". She appeared in the film \"The Last of the Summer\". She appeared in the film \"The Last of the Summer\". She appeared in the film \"The Last of the Summer\". She appeared in the film \"The Last of the Summer",
+      "retrieved_ids": [
+        "Liam Spencer (The Bold and the Beautiful)",
+        "Sunny Johnson",
+        "Lawrence Saint-Victor",
+        "Skyler Samuels"
+      ],
+      "relevant_ids": [
+        "Linsey Godfrey",
+        "Linsey Godfrey",
+        "Caroline Spencer",
+        "The Bold and the Beautiful characters (2015)",
+        "Linsey Godfrey"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.870121448000191,
+      "generation_time_s": 8.023287952999908,
+      "total_time_s": 10.940390111999932,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when does the second part of season 3 fuller house",
+      "gold_answers": [
+        "December 22 , 2017"
+      ],
+      "prediction": "<unused6236> to the finale. The series was renewed for a third season. The series was renewed for a third season in 2018. The series was renewed for a fourth season in 2019. The series was renewed for a fifth season in 2020. The series was renewed for a sixth season in 2021. The series was renewed for a seventh season in 2022. The series was renewed for a seventh season in 2023. The series was renewed for a seventh season in 2024.",
+      "retrieved_ids": [
+        "Fuller House (TV series)",
+        "Pretty Little Liars (season 2)",
+        "Stranger Things"
+      ],
+      "relevant_ids": [
+        "Fuller House (TV series)",
+        "Fuller House (TV series)"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.161741763000009,
+      "generation_time_s": 7.274413852999942,
+      "total_time_s": 10.4830842880001,
+      "generated_tokens": 121
+    },
+    {
+      "query": "who narrated the original 1966 how the grinch stole christmas",
+      "gold_answers": [
+        "Boris Karloff"
+      ],
+      "prediction": "<unused6237> the song was not included in the film.\n\n<unused6236> the Grinch.\n\nDocument: The Grinch: The Grinch is a character in the 1966 animated film \"How the Grinch Stole Christmas\" by Dr. Seuss. The Grinch is a character in the 1966 animated film \"How the Grinch Stole Christmas\" by Dr. Seuss. The Grinch is a character in the 1966 animated film \"How the Grinch Stole Christmas\".\n\nDocument: The Grinch: The Grinch is a character in the 1966 animated",
+      "retrieved_ids": [
+        "Boris Karloff",
+        "Dr. Seuss",
+        "Grinch",
+        "You're a Mean One, Mr. Grinch",
+        "Santa Claus in film"
+      ],
+      "relevant_ids": [
+        "How the Grinch Stole Christmas! (TV special)",
+        "How the Grinch Stole Christmas! (TV special)",
+        "How the Grinch Stole Christmas! (TV special)",
+        "Grinch",
+        "How the Grinch Stole Christmas! (TV special)",
+        "How the Grinch Stole Christmas!",
+        "Boris Karloff",
+        "How the Grinch Stole Christmas!",
+        "How the Grinch Stole Christmas! (TV special)",
+        "Phyllis McGinley",
+        "You're a Mean One, Mr. Grinch",
+        "Chuck Jones",
+        "Grinch"
+      ],
+      "recall_at_k": 0.42857142857142855,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.294291863999888,
+      "generation_time_s": 7.759630943000047,
+      "total_time_s": 11.107789394000065,
+      "generated_tokens": 128
+    },
+    {
+      "query": "i 've got a brand new pair of roller skates original artist",
+      "gold_answers": [
+        "Melanie"
+      ],
+      "prediction": "<unused6236> the skates were sold at the same time. The skates were sold for $100. The skates were sold in the United States and Canada. The skates were sold in the United States and Canada. The skates were sold in the United States and Canada. The skates were sold in the United States and Canada. The skates were sold in the United States and Canada. The skates were sold in the United States and Canada. The skates were sold in the United States and Canada. The skates were sold in the United States and Canada. The skates were sold in the United States and Canada.",
+      "retrieved_ids": [
+        "Wile E. Coyote and the Road Runner",
+        "SpnKiX",
+        "Ted Coombs",
+        "Israel Roller Hockey League"
+      ],
+      "relevant_ids": [
+        "Brand New Key",
+        "Brand New Key"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.011928029999808,
+      "generation_time_s": 7.696822669000085,
+      "total_time_s": 10.779746803999842,
+      "generated_tokens": 121
+    },
+    {
+      "query": "who is the head coach of the minnesota timberwolves",
+      "gold_answers": [
+        "Thomas Joseph Thibodeau Jr."
+      ],
+      "prediction": "<unused6237> Timberwolves.\n\n<unused6236>.",
+      "retrieved_ids": [
+        "Terry Porter",
+        "Bill Blair (basketball)",
+        "Kevin McHale (basketball)",
+        "Tony Campbell",
+        "Sam Mitchell (basketball)"
+      ],
+      "relevant_ids": [
+        "Tom Thibodeau",
+        "Tom Thibodeau",
+        "Tom Thibodeau"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.885900802000151,
+      "generation_time_s": 0.3956082210002023,
+      "total_time_s": 3.3269427850000284,
+      "generated_tokens": 7
+    },
+    {
+      "query": "who plays zack and cody in the suite life",
+      "gold_answers": [
+        "Dylan and Cole Sprouse"
+      ],
+      "prediction": "the series.\n\n<unused6236> is a 2009 film.\n\nThe Suite Life on Deck is a 2009 American animated television series created by Disney Channel. The series is based on the 1995 film of the same name. The series is based on the 1995 film of the same name. The series is based on the 1995 film of the same name. The series is based on the 1995 film of the same name. The series is based on the 1995 film of the same name. The series is based on the",
+      "retrieved_ids": [
+        "The Suite Life Goes Hollywood",
+        "The Suite Life of Zack & Cody",
+        "The Suite Life on Deck",
+        "Dylan and Cole Sprouse"
+      ],
+      "relevant_ids": [
+        "The Suite Life of Zack & Cody",
+        "Kim Rhodes",
+        "Kim Rhodes",
+        "The Suite Life of Zack & Cody",
+        "The Suite Life Movie",
+        "London Tipton"
+      ],
+      "recall_at_k": 0.25,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.290874156999962,
+      "generation_time_s": 7.717062781000095,
+      "total_time_s": 11.05279326599998,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who was the last person executed in ireland",
+      "gold_answers": [
+        "Michael Manning"
+      ],
+      "prediction": "<unused6237> the murder of his wife and son.\n\n<unused6236> in 1941. He was executed on 11 April 1941. He was executed by hanging. He was executed in the Old State House in the Old State House, where he was executed on 11 April 1941. He was executed by hanging. He was executed by hanging. He was executed on 11 April 1941. He was executed by hanging. He was executed on 11 April 1941. He was executed by hanging. He was executed on 11 April",
+      "retrieved_ids": [
+        "John Gordon (Rhode Island)",
+        "Anna Maria Schwegelin",
+        "James French (murderer)",
+        "Capital punishment in Switzerland",
+        "Capital punishment in Ireland"
+      ],
+      "relevant_ids": [
+        "Michael Manning (murderer)",
+        "Michael Manning (murderer)",
+        "Michael Manning (murderer)",
+        "Mountjoy Prison",
+        "Capital punishment in Ireland"
+      ],
+      "recall_at_k": 0.3333333333333333,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.107549403000121,
+      "generation_time_s": 8.071996708999905,
+      "total_time_s": 11.238932946999967,
+      "generated_tokens": 128
+    },
+    {
+      "query": "where are the fruits of the spirit found in the bible",
+      "gold_answers": [
+        "Epistle to the Galatians"
+      ],
+      "prediction": "<unused6237> preserved in the Bible.\n\n<unused6236>.\n\nDocument: The Holy Spirit is the Holy Spirit.\n\nDocument: The Holy Spirit is the Holy Spirit.\n\nDocument: The Holy Spirit is the Holy Spirit.\n\nDocument: The Holy Spirit is the Holy Spirit.\n\nDocument: The Holy Spirit is the Holy Spirit.\n\nDocument: The Holy Spirit is the Holy Spirit.\n\nDocument: The Holy Spirit is the Holy Spirit.\n\nDocument: The Holy Spirit is the Holy Spirit.\n\nDocument: The Holy Spirit is the Holy Spirit.\n\nDocument: The Holy Spirit is the Holy Spirit.\n\nDocument: The Holy Spirit is the Holy",
+      "retrieved_ids": [
+        "Gender of the Holy Spirit",
+        "Catholic Charismatic Renewal in Latin America",
+        "Hell",
+        "Wisdom",
+        "Verbal plenary preservation"
+      ],
+      "relevant_ids": [
+        "Fruit of the Holy Spirit",
+        "Galatians 5"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8442901440000696,
+      "generation_time_s": 8.523223771999938,
+      "total_time_s": 11.44486447700001,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when was the planning commission set up to prepare a blue print of development for the country",
+      "gold_answers": [
+        "15 March 1950"
+      ],
+      "prediction": "1992. The commission was established to formulate the vision and strategy for the country. The commission was established to formulate the vision and strategy for the country. The commission was established to formulate the vision and strategy for the country. The commission was established to formulate the vision and strategy for the country. The commission was established to formulate the vision and strategy for the country. The commission was established to formulate the vision and strategy for the country. The commission was established to formulate the vision and strategy for the country. The commission was established to formulate the vision and strategy for the country. The commission was established to formulate the vision and strategy",
+      "retrieved_ids": [
+        "Planning Commission (Pakistan)",
+        "Bangalore Metropolitan Planning Committee",
+        "Local governance in Kerala",
+        "Federal Ministry of Budget and National Planning (Nigeria)"
+      ],
+      "relevant_ids": [
+        "Planning Commission (India)"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.863484749999998,
+      "generation_time_s": 8.292606101000047,
+      "total_time_s": 11.20732724200002,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who is the coach of arizona state men 's basketball",
+      "gold_answers": [
+        "Bobby Hurley"
+      ],
+      "prediction": "1982. He was the first coach to win the NCAA Division I national championship in the 1982-83 season. He was the first coach to win the NCAA Tournament in the NCAA Division I era. He was the first coach to win the NCAA Tournament in the NCAA Division I era. He was the first coach to win the NCAA Tournament in the NCAA Division I era. He was the first coach to win the NCAA Tournament in the NCAA Division I era. He was the first coach to win the NCAA Tournament in the NCAA Division I era. He was the first coach to win the NCAA Tournament in the",
+      "retrieved_ids": [
+        "Dedrique Taylor",
+        "Terry Porter",
+        "Bill Kajikawa",
+        "Arizona\u2013Arizona State men's basketball rivalry",
+        "Ned Wulk"
+      ],
+      "relevant_ids": [
+        "Bobby Hurley",
+        "Dan Hurley",
+        "Draz\u030cen Zlovaric\u0301",
+        "Arizona State Sun Devils men's basketball",
+        "Arizona\u2013Arizona State men's basketball rivalry",
+        "2015\u201316 Arizona State Sun Devils men's basketball team",
+        "2017\u201318 Arizona State Sun Devils men's basketball team",
+        "2018\u201319 Arizona State Sun Devils men's basketball team",
+        "2017\u201318 Arizona State Sun Devils men's basketball team",
+        "2016\u201317 Arizona State Sun Devils men's basketball team",
+        "2016\u201317 Arizona State Sun Devils men's basketball team",
+        "2018\u201319 Arizona State Sun Devils men's basketball team",
+        "Nate Oats",
+        "Nate Oats"
+      ],
+      "recall_at_k": 0.1,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.90240651299996,
+      "generation_time_s": 8.336198194999952,
+      "total_time_s": 11.285470860000032,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who won i want to work for diddy",
+      "gold_answers": [
+        "Suzanne Siegel"
+      ],
+      "prediction": "<unused6237> of the contestants.\n\n<unused6236> the show was a reality show that was created by Mark Jacobs and produced by VH1. It was a reality show that was created in 2009. It was a reality show that was created by Mark Jacobs and produced by VH1. It was a reality show that was created in 2009. It was a reality show that was created by Mark Jacobs and produced by VH1. It was a reality show that was created in 2009. It was a reality show that was created by Mark Jacobs and produced by VH1. It was a reality show that was",
+      "retrieved_ids": [
+        "Metropolismania",
+        "I Want to Work for Diddy 2",
+        "Diddy Men",
+        "I Want to Work for Diddy (season 1)"
+      ],
+      "relevant_ids": [
+        "I Want to Work for Diddy (season 1)",
+        "I Want to Work for Diddy (season 1)",
+        "I Want to Work for Diddy (season 1)"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8808055370000147,
+      "generation_time_s": 8.25468279100005,
+      "total_time_s": 11.18219827300004,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who played mason on wizards of waverly place",
+      "gold_answers": [
+        "Sulkin"
+      ],
+      "prediction": "<unused6237> the episode \"The Wizard of Waverly Place\".\n\n<unused6236>.\n\n<h2>Related</h2>\n\n* 2011: \"The Wizard of Waverly Place\"\n* 2011: \"The Wizard of Waverly Place\"\n* 2011: \"The Wizard of Waverly Place\"\n* 2011: \"The Wizard of Waverly Place\"\n* 2011: \"The Wizard of Waverly Place\"\n* 2011: \"The Wizard of Waverly Place\"\n* 2011: \"The Wizard of Waverly",
+      "retrieved_ids": [
+        "China Anne McClain",
+        "Gregg Sulkin",
+        "Alex Russo",
+        "Chad Broskey",
+        "David Henrie"
+      ],
+      "relevant_ids": [
+        "Gregg Sulkin",
+        "Gregg Sulkin",
+        "Wizards of Waverly Place (season 4)",
+        "Wizards of Waverly Place (season 3)",
+        "Wizards of Waverly Place"
+      ],
+      "recall_at_k": 0.25,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8675054570001066,
+      "generation_time_s": 8.227207700999998,
+      "total_time_s": 11.140520942999956,
+      "generated_tokens": 128
+    },
+    {
+      "query": "where is the mesophyll located in a plant",
+      "gold_answers": [
+        "In leaves"
+      ],
+      "prediction": "<unused6237> leaf surface.\n\n<unused6236>. The leaf is a major source of carbon dioxide and water. The leaf is a major source of carbon dioxide. The leaf is a major source of carbon dioxide. The leaf is a major source of water. The leaf is a major source of water. The leaf is a major source of carbon dioxide. The leaf is a major source of carbon dioxide. The leaf is a major source of water. The leaf is a major source of carbon dioxide. The leaf is a major source of carbon dioxide. The leaf is a major source of carbon dioxide. The leaf is a major source of water. The leaf is",
+      "retrieved_ids": [
+        "Antheraxanthin",
+        "Evolutionary history of plants",
+        "Leaf",
+        "Photosynthesis"
+      ],
+      "relevant_ids": [
+        "Vascular tissue",
+        "Palisade cell",
+        "Vascular tissue",
+        "Palisade cell"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8463496659999237,
+      "generation_time_s": 8.131374945000061,
+      "total_time_s": 11.027890925000065,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who directed one flew over the cuckoos nest",
+      "gold_answers": [
+        "Milo\u0161 Forman"
+      ],
+      "prediction": "<unused6237> the nest. The bird is a female cuckoo. The cuckoo is a bird that lays its eggs in the nest. The cuckoo is a bird that lays its eggs in the nest. The cuckoo is a bird that lays its eggs in the nest. The cuckoo is a bird that lays its eggs in the nest. The cuckoo is a bird that lays its eggs in the nest. The cuckoo is a bird that lays its eggs in the nest. The cuckoo is a bird that lays its eggs in the nest. The cuckoo is a bird that lays its eggs. The cuckoo is a bird that",
+      "retrieved_ids": [
+        "Aapadbandhavudu",
+        "Egg tossing (behavior)",
+        "E. C. Stuart Baker",
+        "Nelicourvi weaver",
+        "One Flew Over the Cuckoo's Nest (novel)"
+      ],
+      "relevant_ids": [
+        "One Flew Over the Cuckoo's Nest (film)",
+        "One Flew Over the Cuckoo's Nest (film)",
+        "One Flew Over the Cuckoo's Nest (novel)",
+        "One Flew Over the Cuckoo's Nest (film)",
+        "33rd Golden Globe Awards",
+        "Man Facing Southeast",
+        "Jack Nicholson",
+        "Haskell Wexler",
+        "One Flew Over the Cuckoo's Nest (film)"
+      ],
+      "recall_at_k": 0.16666666666666666,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8185559480000393,
+      "generation_time_s": 7.811710336000033,
+      "total_time_s": 10.67616384400003,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who plays mayor hamilton on ncis new orleans",
+      "gold_answers": [
+        "Steven Robert Weber"
+      ],
+      "prediction": "<unused6236> he was born in 1961. He is the son of a former police officer and a former police officer. He is the son of a former police officer and a former police officer. He is the son of a former police officer and a former police officer. He is the son of a former police officer and a former police officer. He is the son of a former police officer and a former police officer. He is the son of a former police officer and a former police officer. He is the son of a former police officer and a former police officer. He is the son of a former police officer and a",
+      "retrieved_ids": [
+        "Metropolismania",
+        "NCIS: New Orleans (season 3)",
+        "Steven Weber (actor)",
+        "48 Hours (TV program)",
+        "Kim Rhodes"
+      ],
+      "relevant_ids": [
+        "Steven Weber (actor)"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.100263178999967,
+      "generation_time_s": 7.748732722000113,
+      "total_time_s": 10.895459649000031,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who is the owner of phoenix mall pune",
+      "gold_answers": [
+        "Phoenix Mills Limited"
+      ],
+      "prediction": "1.\n\nDocument: Phoenix Marketcity (Mumbai) Phoenix Marketcity (Mumbai) Phoenix Marketcity is a shopping mall located in Mumbai, India. It is a shopping mall located in Mumbai, India. It is a mall that is located in the city of Mumbai. It is a shopping mall that is located in Mumbai, India. Phoenix Marketcity is a shopping mall located in Mumbai, India. It is a shopping mall located in Mumbai, India. Phoenix Marketcity is a shopping mall located in Mumbai, India. Phoenix Marketcity is a shopping mall located in Mumbai, India. Phoenix Marketcity is a shopping mall located in Mumbai,",
+      "retrieved_ids": [
+        "Phoenix Marketcity (Mumbai)",
+        "Metropolismania",
+        "Phoenix Marketcity (Bangalore)",
+        "Phoenix Marketcity (Pune)",
+        "Crossroads Mall (Omaha)"
+      ],
+      "relevant_ids": [
+        "Phoenix Marketcity (Pune)",
+        "Phoenix Marketcity (Pune)",
+        "Phoenix Marketcity (Pune)"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.02197802197802198,
+      "retrieval_time_s": 3.2909593520000726,
+      "generation_time_s": 7.732964498999991,
+      "total_time_s": 11.091153222999992,
+      "generated_tokens": 128
+    },
+    {
+      "query": "what is the postal code for warri nigeria",
+      "gold_answers": [
+        "332"
+      ],
+      "prediction": "<unused6237> the town is the capital of the LGA. The LGA is the capital of the state. The LGA is the seat of the Delta State House of Assembly. The LGA is the seat of the Governor of Delta State. The LGA is the seat of the Governor of Delta State. The LGA is the seat of the Governor of Delta State. The LGA is the seat of the Governor of Delta State. The LGA is the seat of the Governor of Delta State. The LGA is the seat of the Governor of Delta State. The LGA is the seat of the Governor of Delta State. The LGA is the seat of the Governor of Delta State.",
+      "retrieved_ids": [
+        "Warri South West",
+        "Warri North",
+        "Warri South",
+        "Mariga, Nigeria"
+      ],
+      "relevant_ids": [
+        "Warri South",
+        "Warri South",
+        "Warri North",
+        "Warri North",
+        "Warri South West"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.0984095979999893,
+      "generation_time_s": 8.04138994899995,
+      "total_time_s": 11.21980795100012,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who wrote somebody like you by keith urban",
+      "gold_answers": [
+        "John Shanks",
+        "Keith Urban"
+      ],
+      "prediction": "<unused6237> Catfish\" and the song \"I'll Be Here\", and the song was written by the late singer and songwriter, and the song was written by the late singer and songwriter, John Lee.\n\n<unused6236>.",
+      "retrieved_ids": [
+        "Manatee conservation",
+        "Chipping Ongar",
+        "Metropolismania",
+        "Dave Pahanish",
+        "LoCash"
+      ],
+      "relevant_ids": [
+        "Somebody Like You",
+        "Somebody Like You",
+        "Golden Road (album)",
+        "Golden Road (album)",
+        "Somebody Like You",
+        "Greatest Hits: 18 Kids",
+        "Greatest Hits: 18 Kids",
+        "Aaron Kelly (singer)",
+        "Everybody (Keith Urban song)",
+        "For You (Keith Urban song)",
+        "I Told You So (Keith Urban song)",
+        "Dave Pahanish",
+        "Everybody (Keith Urban song)",
+        "Brett Young (album)",
+        "Put You in a Song",
+        "Without You (Keith Urban song)",
+        "For You (Keith Urban song)",
+        "Without You (Keith Urban song)",
+        "Put You in a Song",
+        "I Got You (Craig Morgan song)",
+        "Dave Pahanish",
+        "I Told You So (Keith Urban song)",
+        "Long Hot Summer (Keith Urban song)",
+        "Long Hot Summer (Keith Urban song)",
+        "Get Closer (Keith Urban album)",
+        "Get Closer (Keith Urban album)",
+        "Little Bit of You",
+        "The Ranch (album)",
+        "Little Bit of You",
+        "Shane McAnally",
+        "You Gonna Fly",
+        "You Gonna Fly",
+        "LoCash",
+        "LoCash",
+        "Coming Home (Keith Urban song)",
+        "Coming Home (Keith Urban song)",
+        "The Kinleys",
+        "Craig Morgan",
+        "Days Go By (Keith Urban song)",
+        "Once in a Lifetime (Keith Urban song)",
+        "Cop Car (Keith Urban song)",
+        "Mark Bright (record producer)",
+        "Without You (Keith Urban song)",
+        "Richard Marx",
+        "Once in a Lifetime (Keith Urban song)",
+        "ZaZa Maree"
+      ],
+      "recall_at_k": 0.07142857142857142,
+      "em": 0.0,
+      "f1": 0.06666666666666667,
+      "retrieval_time_s": 2.955422358000078,
+      "generation_time_s": 3.1552497980001135,
+      "total_time_s": 6.172817364000139,
+      "generated_tokens": 45
+    },
+    {
+      "query": "when was the last time loyola made march madness",
+      "gold_answers": [
+        "2018"
+      ],
+      "prediction": "2001.\n\n<unused6236>.\n\nDocument: The Briscoe Brothers: the last time the Briscoe Brothers were in the NBA Finals.",
+      "retrieved_ids": [
+        "Metropolismania",
+        "The Briscoe Brothers",
+        "NBA on CBS",
+        "1991 NBA Finals",
+        "Capital punishment in Switzerland"
+      ],
+      "relevant_ids": [
+        "Loyola Ramblers men's basketball",
+        "2018 Missouri Valley Conference Men's Basketball Tournament",
+        "Simon Greatwich",
+        "Loyola Law School",
+        "Porter Moser",
+        "NCAA March Madness (TV program)"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8858717909999996,
+      "generation_time_s": 1.8144301959998757,
+      "total_time_s": 4.7470432840000285,
+      "generated_tokens": 32
+    },
+    {
+      "query": "who plays christian grey in 50 shades of grey",
+      "gold_answers": [
+        "James Dornan"
+      ],
+      "prediction": "<unused6237> year later, the film was cancelled.\n\n<unused6236> the film was released in the United States on 2014. The film was released in the United States on 2015. The film was released in the United Kingdom on 2016.",
+      "retrieved_ids": [
+        "Jamie Dornan",
+        "Nelson Coates",
+        "Fifty Shades of Grey",
+        "Fifty Shades Darker",
+        "Fifty Shades of Grey (film)"
+      ],
+      "relevant_ids": [
+        "Jamie Dornan"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8761700869999913,
+      "generation_time_s": 3.791551122000101,
+      "total_time_s": 6.713273995999998,
+      "generated_tokens": 57
+    },
+    {
+      "query": "where was sir gawain and the green knight written",
+      "gold_answers": [
+        "late 14th - century"
+      ],
+      "prediction": "<unused6236> the Green Knight, is given the title of \"Sir Gawain\". The poem is a poem of the \"Sir Gawain and the Green Knight\".\nDocument: Sir Gawain and the Green Knight: the poem is a poem of the medieval English medieval English poem, written in the 14th century. It is a poem of the medieval English medieval period. It is a poem of the medieval English. It is a poem of the medieval English. It is a poem of the medieval English. It is a poem of the medieval English. It is a poem of the medieval English. It is a poem of the medieval",
+      "retrieved_ids": [
+        "Alliterative Revival",
+        "English literature",
+        "Sir Gawain and the Green Knight",
+        "Gawain"
+      ],
+      "relevant_ids": [
+        "Sir Gawain and the Green Knight",
+        "Sir Gawain and the Green Knight",
+        "Sir Gawain and the Green Knight",
+        "English literature"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.04819277108433735,
+      "retrieval_time_s": 2.8673420560000977,
+      "generation_time_s": 8.050111719999904,
+      "total_time_s": 10.964054184000133,
+      "generated_tokens": 128
+    },
+    {
+      "query": "in what year did japan attack pearl harbor",
+      "gold_answers": [
+        "1941"
+      ],
+      "prediction": "<unused6237>.\n\n<unused6236>.",
+      "retrieved_ids": [
+        "Pearl Harbor advance-knowledge conspiracy theory",
+        "Pearl Harbor (film)",
+        "National Pearl Harbor Remembrance Day"
+      ],
+      "relevant_ids": [
+        "Attack on Pearl Harbor",
+        "Franklin D. Roosevelt",
+        "Pearl Harbor advance-knowledge conspiracy theory",
+        "Attack on Pearl Harbor",
+        "Pearl Harbor advance-knowledge conspiracy theory",
+        "Pedro Arrupe",
+        "Attack on Pearl Harbor",
+        "Walter Short",
+        "British Malaya",
+        "Attack on Pearl Harbor",
+        "Essence of Decision",
+        "Eddie Townsend",
+        "Naval Station Pearl Harbor",
+        "Modern history",
+        "Naval Station Pearl Harbor",
+        "Naval history of World War II",
+        "Pearl Harbor advance-knowledge conspiracy theory",
+        "Mariana Islands",
+        "History of Oceania",
+        "Hull note",
+        "Philippine resistance against Japan",
+        "Attack on Pearl Harbor",
+        "Events leading to the attack on Pearl Harbor",
+        "Cornelia Fort",
+        "Third and fourth terms of the presidency of Franklin D. Roosevelt",
+        "Claire Lee Chennault",
+        "National Pearl Harbor Remembrance Day",
+        "Air raids on Japan",
+        "Consequences of the attack on Pearl Harbor",
+        "Japanese Canadian internment",
+        "Pearl Harbor",
+        "Mitsuo Fuchida",
+        "Consequences of the attack on Pearl Harbor",
+        "Ford Island",
+        "Storm Over the Pacific",
+        "Vulnerability of Pearl Harbor in 1941",
+        "Vulnerability of Pearl Harbor in 1941",
+        "USS Phoenix (CL-46)",
+        "Consequences of the attack on Pearl Harbor",
+        "Consequences of the attack on Pearl Harbor",
+        "World War II by country",
+        "History of Chinese immigration to Canada",
+        "Pearl Harbor advance-knowledge conspiracy theory",
+        "First engagement of neutral United States in World War II before the attack on Pearl Harbor"
+      ],
+      "recall_at_k": 0.0625,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.1489560090001305,
+      "generation_time_s": 0.34954583500007175,
+      "total_time_s": 3.5450580409999475,
+      "generated_tokens": 6
+    },
+    {
+      "query": "when did country boy can survive come out",
+      "gold_answers": [
+        "January 1982"
+      ],
+      "prediction": "<unused6236> of the family, he was told that the boy was a \"a very good boy.\"",
+      "retrieved_ids": [
+        "Metropolismania",
+        "Richard Viguerie",
+        "Tep Rindaro",
+        "Mary Slessor",
+        "Balloon boy hoax"
+      ],
+      "relevant_ids": [
+        "A Country Boy Can Survive",
+        "A Country Boy Can Survive"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.875686599000119,
+      "generation_time_s": 1.194115525999905,
+      "total_time_s": 4.116571964000059,
+      "generated_tokens": 21
+    },
+    {
+      "query": "when did michael jordan retired from basketball for good",
+      "gold_answers": [
+        "2003"
+      ],
+      "prediction": "<unused6237> to the NBA.\n\n<unused6236>. Jordan was the first player to play in the NBA since the 1990s.\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan:\n\nDocument: Michael Jordan",
+      "retrieved_ids": [
+        "Michael Jordan",
+        "Air Jordan",
+        "Michael Jordan statue",
+        "2001\u201302 Washington Wizards season"
+      ],
+      "relevant_ids": [
+        "Michael Jordan",
+        "Michael Jordan: An American Hero",
+        "Michael Jordan",
+        "Manu Gino\u0301bili",
+        "Pete Maravich",
+        "Miami Heat all-time roster"
+      ],
+      "recall_at_k": 0.2,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8651297359999717,
+      "generation_time_s": 8.411620657000185,
+      "total_time_s": 11.322237765999944,
+      "generated_tokens": 128
+    },
+    {
+      "query": "the story idea for the yellow wallpaper was based on a civil war treatment called",
+      "gold_answers": [
+        "rest cure"
+      ],
+      "prediction": "<unused6236> the story of the Civil War. The story is set in the 1860s, and the story is set in the South, with the setting of the Civil War. The story is set in the South, but the setting is the North. The story is set in the South, and the setting is the Civil War. The story is set in the South, but the setting is the Civil War. The story is set in the South, and the setting is the Civil War. The story is set in the South, but the setting is the Civil War. The story is set in the South, and the",
+      "retrieved_ids": [
+        "Blueberry (comics)",
+        "Yellow River (song)",
+        "North by Northwest",
+        "Carnton",
+        "The Passion of Jonathan Wade"
+      ],
+      "relevant_ids": [
+        "The Yellow Wallpaper",
+        "The Yellow Wallpaper",
+        "Silas Weir Mitchell (physician)",
+        "The Yellow Wallpaper",
+        "Bed rest",
+        "Charlotte Perkins Gilman",
+        "The Yellow Wallpaper",
+        "Bed rest",
+        "The Yellow Wallpaper",
+        "Silas Weir Mitchell (physician)",
+        "Neurasthenia"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.881122061999804,
+      "generation_time_s": 8.402164015000153,
+      "total_time_s": 11.332569852999995,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when is the show six coming back on",
+      "gold_answers": [
+        "May 28 , 2018"
+      ],
+      "prediction": "1999. The show was cancelled in 2011.\n\n<unused6236> the show was cancelled in 2012.",
+      "retrieved_ids": [
+        "Metropolismania",
+        "Morag Bellingham",
+        "Matt Ryan (City Homicide)",
+        "Andrew Lack (executive)",
+        "Bianca Jackson"
+      ],
+      "relevant_ids": [
+        "Six (TV series)"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.9297531189999972,
+      "generation_time_s": 1.7970663930000228,
+      "total_time_s": 4.773363642000049,
+      "generated_tokens": 31
+    },
+    {
+      "query": "when was the first time the word catholic was used",
+      "gold_answers": [
+        "in the early 2nd century"
+      ],
+      "prediction": "<unused6237> refer to a person who was mentally disabled.\n\n<unused6236> in the United States.\n\nThe word \"Catholic\" was first used in the 19th century.\n\nThe word \"Catholic\" was first used in the 19th century.\n\nThe word \"Catholic\" was first used in the 19th century.\n\nThe word \"Catholic\" was first used in the 19th century.\n\nThe word \"Catholic\" was first used in the 19th century.\n\nThe word \"Catholic\" was first used in the 19th century.\n\nThe word \"Catholic\" was first used",
+      "retrieved_ids": [
+        "Caffo",
+        "Catholic (term)",
+        "Verge escapement",
+        "Retard (pejorative)",
+        "Gay"
+      ],
+      "relevant_ids": [
+        "Catholic (term)",
+        "Catholic (term)"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.057971014492753624,
+      "retrieval_time_s": 3.2915968770000745,
+      "generation_time_s": 7.790244107000035,
+      "total_time_s": 11.128347688000076,
+      "generated_tokens": 128
+    },
+    {
+      "query": "how many o'reilly auto parts stores are there",
+      "gold_answers": [
+        "5,100"
+      ],
+      "prediction": "<unused6236>.\nDocument: O'Reilly Auto Parts: In 1998, the company acquired the auto parts business of the Auto Parts Group, Inc. The company was acquired by the company's parent company, O'Reilly Auto Parts, Inc. The company was founded in 1975 and is headquartered in Springfield, Illinois. The company was founded by John O'Reilly, a former president and owner of the company. The company was acquired by O'Reilly in 1995. The company was founded in 1975 and is headquartered in Springfield, Illinois. The company has",
+      "retrieved_ids": [
+        "O'Reilly Auto Parts",
+        "Chief Auto Parts",
+        "Western Auto"
+      ],
+      "relevant_ids": [
+        "O'Reilly Auto Parts",
+        "O'Reilly Auto Parts",
+        "O'Reilly Auto Parts"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.993895930000008,
+      "generation_time_s": 8.041878895000082,
+      "total_time_s": 11.092927131999886,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when did ipad pro 2nd generation come out",
+      "gold_answers": [
+        "June 5 , 2017"
+      ],
+      "prediction": "the iPad mini.\n\n<unused6236> the iPad mini.\n\nDocument: IPad (2nd generation): the iPad mini. The iPad mini was released on October 2013. The iPad mini was the first iPad to be released in the United States. The iPad mini was the first iPad to be released in the United States. The iPad mini was the first iPad to be released in the United States. The iPad mini was the first iPad to be released in the United States. The iPad mini was the first iPad to be released in the United States. The iPad mini was the first iPad to be released in the United States. The",
+      "retrieved_ids": [
+        "IPad Mini (1st generation)",
+        "IPad (4th generation)",
+        "IPad (1st generation)",
+        "IPad (3rd generation)"
+      ],
+      "relevant_ids": [
+        "IPad Pro",
+        "IPad Pro",
+        "IPad Pro",
+        "Apple Inc.",
+        "Apple A10X",
+        "Apple A10X",
+        "Apple-designed processors"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8544577899999695,
+      "generation_time_s": 8.402485977999959,
+      "total_time_s": 11.302945137000052,
+      "generated_tokens": 128
+    },
+    {
+      "query": "what is the name of the college in the classic movie animal house",
+      "gold_answers": [
+        "Faber College"
+      ],
+      "prediction": "<unused6237> Boat\" the same year the movie was filmed.\n\n<unused6236>.\n\nDocument: The movie \"The Simpsons\" is a 1990s sitcom that was based on the Simpsons character, played by John Lithgow. The show is about a group of college students who are trying to find a new home for their parents. The show is based on the Simpsons character, Homer Simpson, who is a college student at the University of Illinois. The show is based on the Simpsons character, Homer Simpson, who is a college student at the University of Illinois.\n\nDocument: The Simpsons is a 1990s sitcom that",
+      "retrieved_ids": [
+        "Louie Louie",
+        "College (30 Rock)",
+        "Southern Illinois University Carbondale",
+        "Autzen Stadium",
+        "Instrument destruction"
+      ],
+      "relevant_ids": [
+        "Animal House",
+        "Autzen Stadium",
+        "Animal House",
+        "Animal House"
+      ],
+      "recall_at_k": 0.5,
+      "em": 0.0,
+      "f1": 0.02469135802469136,
+      "retrieval_time_s": 2.8952531539998745,
+      "generation_time_s": 8.495703788000128,
+      "total_time_s": 11.436149445999945,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who was the first woman appointed to the supreme court",
+      "gold_answers": [
+        "Sandra Day O'Connor"
+      ],
+      "prediction": "and the first woman to be appointed to the Supreme Court of Canada. She was the first woman to be appointed to the Supreme Court of Canada. She was the first woman to be appointed to the Supreme Court of Canada. She was the first woman to be appointed to the Supreme Court of Canada. She was the first woman to be appointed to the Supreme Court of Canada. She was the first woman to be appointed to the Supreme Court of Canada. She was the first woman to be appointed to the Supreme Court of Canada. She was the first woman to be appointed to the Supreme Court of Canada. She was the first woman to be appointed to",
+      "retrieved_ids": [
+        "Women in law",
+        "Jane Mathews",
+        "Margarita Argu\u0301as",
+        "Rosalie E. Wahl",
+        "Sandra Day O'Connor High School (Arizona)"
+      ],
+      "relevant_ids": [
+        "Sandra Day O'Connor",
+        "Burger Court",
+        "Sandra Day O'Connor High School (Arizona)",
+        "Demographics of the Supreme Court of the United States",
+        "Presidency of Bill Clinton"
+      ],
+      "recall_at_k": 0.2,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.885982629999944,
+      "generation_time_s": 8.41874084799997,
+      "total_time_s": 11.350217668000141,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who sang the song i love to love",
+      "gold_answers": [
+        "Tina Charles"
+      ],
+      "prediction": "after the song was released. I was so happy. I was so happy that I was so happy. I was so happy that I was singing it. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was so happy. I was",
+      "retrieved_ids": [
+        "The Dubliners",
+        "Saara Aalto",
+        "Bjo\u0308rk",
+        "I'm Gonna Make You Love Me",
+        "I Wanna Dance with Somebody (Who Loves Me)"
+      ],
+      "relevant_ids": [
+        "I Love to Love (But My Baby Loves to Dance)",
+        "Bjo\u0308rk"
+      ],
+      "recall_at_k": 0.5,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8797585530001015,
+      "generation_time_s": 8.358326505999912,
+      "total_time_s": 11.282777398999997,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who controlled blue cross when it was formed",
+      "gold_answers": [
+        "1929"
+      ],
+      "prediction": "<unused6237> 1982.\n\n<unused6236> by the merger of Blue Cross of California and Blue Cross of New York. The company was the first to offer health insurance for the uninsured and uninsured. The company was the first to offer health insurance for the uninsured. The company was the first to offer health insurance for the uninsured.",
+      "retrieved_ids": [
+        "Irish Blue Cross",
+        "Metropolismania",
+        "Anthem (company)",
+        "Medical Mutual of Ohio"
+      ],
+      "relevant_ids": [
+        "Blue Cross Blue Shield Association",
+        "Managed care",
+        "Blue Cross Blue Shield Association"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8954349569999067,
+      "generation_time_s": 3.7253900509999767,
+      "total_time_s": 6.667015960000072,
+      "generated_tokens": 66
+    },
+    {
+      "query": "who sings i 'm back in the saddle again",
+      "gold_answers": [
+        "Gene Autry"
+      ],
+      "prediction": "in the saddle\" and \"I'm Gonna Get You\" and \"I'm Gonna Get You\".\n\n<unused6236> \"I'm Gonna Get You\" was released in 1969.\n\nDocument: \"I'm Gonna Get You\" was released in 1970. The song was written by the band's lead singer, Frank Zappa. The song was written for the album \"I'm Gonna Get You\" and was released in 1971. The song was written by Frank Zappa and was recorded in 1969. The song was written for the album \"",
+      "retrieved_ids": [
+        "Matt Lucas (singer)",
+        "Rock This Country Tour",
+        "100% Pure Love",
+        "Back in the Saddle (film)",
+        "I Don't Wanna Get Drafted"
+      ],
+      "relevant_ids": [
+        "Back in the Saddle Again",
+        "Back in the Saddle Again",
+        "Back in the Saddle Again",
+        "Back in the Saddle Again",
+        "Back in the Saddle Again",
+        "Back in the Saddle (film)",
+        "Back in the Saddle (film)",
+        "Rocks (Aerosmith album)",
+        "In the Jailhouse Now"
+      ],
+      "recall_at_k": 0.25,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.330257056999926,
+      "generation_time_s": 7.823740796000038,
+      "total_time_s": 11.20373825300021,
+      "generated_tokens": 128
+    },
+    {
+      "query": "which type of triangle must have perpendicular lines",
+      "gold_answers": [
+        "a right triangle"
+      ],
+      "prediction": "<unused6236> of the circle.\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer:\n\nAnswer",
+      "retrieved_ids": [
+        "Elliptic geometry",
+        "Ultraparallel theorem",
+        "Johnson circles",
+        "Catenary",
+        "Incenter"
+      ],
+      "relevant_ids": [
+        "Perpendicular",
+        "Triangle",
+        "Moire\u0301 pattern",
+        "Euler line",
+        "Altitude (triangle)",
+        "Right angle",
+        "Midpoint",
+        "Perpendicular",
+        "Distance from a point to a line",
+        "Speed square",
+        "Detention dam"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.1235798379998414,
+      "generation_time_s": 8.006873170000063,
+      "total_time_s": 11.186329226999987,
+      "generated_tokens": 128
+    },
+    {
+      "query": "the most readily absorbed form of iron in the diet is",
+      "gold_answers": [
+        "animal products"
+      ],
+      "prediction": "iron.\n\n<unused6236> in the blood.\n\nIron is a mineral that is found in the blood and is a major component of hemoglobin. Iron is a group of iron-containing compounds that is a major component of hemoglobin. Iron is a group of iron-containing compounds that is found in the blood. Iron is a group of iron-containing compounds that is found in the blood. Iron is a group of iron-containing compounds that is found in the blood. Iron is a group of iron-containing compounds that is found in the blood. Iron is a group of iron-containing compounds that is found in the blood. Iron is a group",
+      "retrieved_ids": [
+        "Calcium metabolism",
+        "Iron overload",
+        "Iron-deficiency anemia",
+        "Nutrition",
+        "Iron deficiency"
+      ],
+      "relevant_ids": [
+        "Human iron metabolism",
+        "Human iron metabolism",
+        "Macrobiotic diet"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.9161361950000355,
+      "generation_time_s": 8.3356274209998,
+      "total_time_s": 11.323618631999807,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who plays lorelai in hannah montana the movie",
+      "gold_answers": [
+        "Melora Hardin"
+      ],
+      "prediction": "the \"Hannah Montana\" and \"Hannah Montana\".\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana\"\n\nDocument: \"Hannah Montana",
+      "retrieved_ids": [
+        "Emily Osment",
+        "Cody Linley",
+        "Louie Louie",
+        "Moise\u0301s Arias",
+        "Hannah Montana"
+      ],
+      "relevant_ids": [
+        "Hannah Montana: The Movie",
+        "Back to Tennessee (song)",
+        "Hannah Montana: The Movie"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.836718757999961,
+      "generation_time_s": 8.316120697000088,
+      "total_time_s": 11.196533446000103,
+      "generated_tokens": 128
+    },
+    {
+      "query": "where does salt come from in the sea",
+      "gold_answers": [
+        "the evaporation of seawater"
+      ],
+      "prediction": "<unused6236>.\n\nDocument: Sea salt is a type of salt that is used in the production of salt. It is a mixture of sodium chloride and sodium chloride. It is used in the production of salt. Sea salt is a mixture of sodium chloride and sodium chloride. Sea salt is a mixture of sodium chloride and sodium chloride. Sea salt is a mixture of sodium chloride and sodium chloride.\n\nDocument: Sea salt is a mixture of sodium chloride and sodium chloride. It is used in the production of salt. Sea salt is a mixture of sodium chloride and sodium chloride.\n\nDocument: Sea salt is a mixture of sodium chloride and sodium chloride",
+      "retrieved_ids": [
+        "Asad (film)",
+        "Sea salt",
+        "Salt",
+        "Sel gris"
+      ],
+      "relevant_ids": [
+        "Sea salt",
+        "Sea salt",
+        "Sea salt"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.019417475728155338,
+      "retrieval_time_s": 2.8221226789999037,
+      "generation_time_s": 8.328873761000068,
+      "total_time_s": 11.200968499000055,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when did the second amendment go into effect",
+      "gold_answers": [
+        "December 15 , 1791"
+      ],
+      "prediction": "<unused6237>.\n\n<unused6236> the amendment.\n\nDocument: 1920-1933\n\nDocument: 1920-1933\n\nDocument: 1920-1933\n\nDocument: 1920-1933\n\nDocument: 1920-1933\n\nDocument: 1920-1933\n\nDocument: 1920-1933\n\nDocument: 1920-1933\n\nDocument: 1920-1933\n\nDocument:",
+      "retrieved_ids": [
+        "Rum-running",
+        "President-elect of the United States",
+        "Prohibition in the United States",
+        "Second Amendment to the United States Constitution",
+        "2008 California Proposition 8"
+      ],
+      "relevant_ids": [
+        "Second Amendment to the United States Constitution"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8546483529999023,
+      "generation_time_s": 8.227933880999899,
+      "total_time_s": 11.142410686999938,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who has the highest minimum wage in the usa",
+      "gold_answers": [
+        "Washington"
+      ],
+      "prediction": "<unused6237> per hour.\n\n<unused6236>.\n\nDocument: Minimum wage in the United States: the United States. The minimum wage is the minimum wage that a worker is paid for the work of a job. The minimum wage is the minimum wage that a worker is paid for the work of a job. The minimum wage is the minimum wage that a worker is paid for the work of a job. The minimum wage is the minimum wage that a worker is paid for the work of a job. The minimum wage is the minimum wage that a worker is paid for the work of a job. The minimum wage is the minimum wage that a worker is paid",
+      "retrieved_ids": [
+        "Minimum wage in the United States",
+        "Minimum wage",
+        "Denmark"
+      ],
+      "relevant_ids": [
+        "Minimum wage in the United States",
+        "Minimum wage law",
+        "Minimum wage",
+        "Minimum wage in the United States",
+        "Minimum Wage Fairness Act",
+        "Minimum wage in the United States",
+        "Income inequality in the United States",
+        "Minimum wage in the United States",
+        "Unemployment in the United States",
+        "Frank Chopp",
+        "Minimum wage",
+        "Minimum wage",
+        "Minimum wage in the United States",
+        "Minimum wage in the United States"
+      ],
+      "recall_at_k": 0.2857142857142857,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8647564079999484,
+      "generation_time_s": 8.250393223999936,
+      "total_time_s": 11.159740809999903,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who is the only kaurava who survived the kurukshetra war",
+      "gold_answers": [
+        "Yuyutsu"
+      ],
+      "prediction": "Post-mortem: \"Yuyutsu\" is \"Yuyutsu\" and \"Yuyutsu\" is the name of the warrior who is the last of the seven.\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*\n\n*",
+      "retrieved_ids": [
+        "Yuyutsu",
+        "Vyasa (title)",
+        "Ashwatthama",
+        "Kripa"
+      ],
+      "relevant_ids": [
+        "Yuyutsu",
+        "Dhritarashtra",
+        "Yuyutsu",
+        "Kurukshetra War",
+        "Sauptika Parva",
+        "Yuyutsu",
+        "Vikarna",
+        "Kaurava",
+        "Kaurava"
+      ],
+      "recall_at_k": 0.16666666666666666,
+      "em": 0.0,
+      "f1": 0.125,
+      "retrieval_time_s": 2.896176609999884,
+      "generation_time_s": 8.276829515000145,
+      "total_time_s": 11.225522799999908,
+      "generated_tokens": 128
+    },
+    {
+      "query": "where does tap water in london come from",
+      "gold_answers": [
+        "River Lea",
+        "River Thames"
+      ],
+      "prediction": "<unused6237> the city of Denver, the city of Denver is the largest city in the United States.\n\n<unused6236> the city of Denver is the largest city in the United States. The city is located in the state of Colorado. The city is located in the state of Colorado. The city is located in the state of Colorado. The city is located in the state of Colorado. The city is located in the state of Colorado. The city is located in the state of Colorado. The city is located in the state of Colorado. The city is located in the state of Colorado. The city is located in the state of Colorado. The city is located",
+      "retrieved_ids": [
+        "Dasani",
+        "Water contamination in Crestwood, Illinois",
+        "Dillon Reservoir",
+        "Water kiosk",
+        "Oh Se-hoon"
+      ],
+      "relevant_ids": [
+        "Water supply and sanitation in London",
+        "River Lea"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.886513095000055,
+      "generation_time_s": 8.001786233000075,
+      "total_time_s": 10.932964833000142,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when does fairy tail dragon cry come out in canada",
+      "gold_answers": [
+        "August 14 , 2017"
+      ],
+      "prediction": "<unused6237> the United States.\n\n<unused6236> the film was released in the United States on July 17, 2017.\n\nThe film was released in Japan on July 17, 2017.\n\nThe film was released in Japan on July 17, 2017.\n\nThe film was released in Japan on July 17, 2017.\n\nThe film was released in Japan on July 17, 2017.\n\nThe film was released in Japan on July 17, 2017.\n\nThe film was released in",
+      "retrieved_ids": [
+        "Fairy Tail: Dragon Cry"
+      ],
+      "relevant_ids": [
+        "Fairy Tail: Dragon Cry",
+        "Fairy Tail: Dragon Cry"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.030303030303030304,
+      "retrieval_time_s": 3.1178511410000738,
+      "generation_time_s": 7.881308305999937,
+      "total_time_s": 11.045637510999995,
+      "generated_tokens": 128
+    },
+    {
+      "query": "what cities are in santa rosa county florida",
+      "gold_answers": [
+        "Gulf Breeze",
+        "Milton"
+      ],
+      "prediction": "<unused6237> the area. The county is located in the central part of the state.\n\n<unused6236>. The county is located in the central part of the state. The county is located in the central part of the state. The county is located in the central part of the state. The county is located in the central part of the state. The county is located in the central part of the state. The county is located in the central part of the state. The county is located in the central part of the state. The county is located in the central part of the state. The county is located in the central part of the state. The",
+      "retrieved_ids": [
+        "Florida State Road 89",
+        "Santa Rosa County, Florida",
+        "Jay, Florida",
+        "Milton, Florida"
+      ],
+      "relevant_ids": [
+        "Santa Rosa County, Florida",
+        "Santa Rosa County, Florida",
+        "Santa Rosa County, Florida",
+        "Santa Rosa County Sheriff's Office",
+        "Santa Rosa County, Florida",
+        "Midway, Santa Rosa County, Florida",
+        "Naval Outlying Field Santa Rosa",
+        "Santa Rosa County, Florida",
+        "Midway, Santa Rosa County, Florida",
+        "Santa Rosa Medical Center",
+        "Santa Rosa Medical Center",
+        "Blackwater River (Florida)",
+        "Naval Outlying Field Santa Rosa",
+        "Company H, 6th Florida Infantry Regiment",
+        "Pensacola Beach, Florida",
+        "Milton, Florida",
+        "Santa Rosa County, Florida",
+        "Milton High School (Florida)",
+        "Oriole Beach, Florida",
+        "Milton, Florida",
+        "Milton High School (Florida)",
+        "Santa Rosa County, Florida",
+        "Florida State Road 399",
+        "Florida State Road 89",
+        "Yancy Spencer III",
+        "Oriole Beach, Florida",
+        "Santa Rosa Medical Center",
+        "Pensacola Beach, Florida",
+        "Escambia Bay",
+        "Escambia Bay",
+        "West Florida Public Libraries",
+        "Bolley Johnson"
+      ],
+      "recall_at_k": 0.17647058823529413,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.2813923429998795,
+      "generation_time_s": 7.84514510300005,
+      "total_time_s": 11.171075112999915,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who is known as the father of humanism",
+      "gold_answers": [
+        "Petrarch"
+      ],
+      "prediction": "<unused6237> humanist, he was a great influence on the development of the Renaissance.\n\n<unused6236>\n\nDocument: John V. V.\n\nDocument: John V. V. V.\n\nDocument: John V. V. V.\n\nDocument: John V. V. V. V.\n\nDocument: John V. V. V. V. V.\n\nDocument: John V. V. V. V. V. V. V. V. V. V. V. V. V. V. V. V. V. V. V. V. V. V. V. V. V. V. V",
+      "retrieved_ids": [
+        "Rodolphus Agricola",
+        "John Vite\u0301z",
+        "Petrarch",
+        "Lovato Lovati",
+        "Philip Melanchthon"
+      ],
+      "relevant_ids": [
+        "Petrarch",
+        "Albertino Mussato",
+        "Lovato Lovati",
+        "Renaissance humanism",
+        "Lovato Lovati"
+      ],
+      "recall_at_k": 0.5,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.2641901970000617,
+      "generation_time_s": 7.793735989999959,
+      "total_time_s": 11.125390160000052,
+      "generated_tokens": 128
+    },
+    {
+      "query": "who played young bobby brown in new edition",
+      "gold_answers": [
+        "Tyler Marcel Williams"
+      ],
+      "prediction": "<unused6237> and the film \"The New Edition\".\n\n<unused6236> and \"The New Edition\" was released in 2005.",
+      "retrieved_ids": [
+        "The New Edition Story",
+        "Bobby Brown",
+        "Cody Arens",
+        "Gossip Girl (season 5)"
+      ],
+      "relevant_ids": [
+        "The New Edition Story",
+        "The New Edition Story",
+        "The New Edition Story",
+        "The New Edition Story"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.0353779960000793,
+      "generation_time_s": 1.9585748259999036,
+      "total_time_s": 5.078009750000092,
+      "generated_tokens": 27
+    },
+    {
+      "query": "who plays helena cassa dine on general hospital",
+      "gold_answers": [
+        "Constance Towers"
+      ],
+      "prediction": "<unused6236> in the role of the character.",
+      "retrieved_ids": [
+        "Helena Cassadine",
+        "Derk Cheetwood",
+        "Laura Spencer (General Hospital)",
+        "Bruce Davison"
+      ],
+      "relevant_ids": [
+        "Helena Cassadine",
+        "General Hospital",
+        "Helena Cassadine",
+        "Nathan Parsons",
+        "Laura Spencer (General Hospital)",
+        "Nathan West (General Hospital)",
+        "Jason Morgan (General Hospital)"
+      ],
+      "recall_at_k": 0.3333333333333333,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.902864579000152,
+      "generation_time_s": 0.586045772000034,
+      "total_time_s": 3.53404641599991,
+      "generated_tokens": 10
+    },
+    {
+      "query": "who said and down the stretch they come",
+      "gold_answers": [
+        "Dave Johnson"
+      ],
+      "prediction": "<unused6237> of the people who are not in the right place.\n\n<unused6236>.\n\nDocument: The New York Times:\n\nDocument: The New York Times:\n\nDocument: The New York Times:\n\nDocument: The New York Times:\n\nDocument: The New York Times:\n\nDocument: The New York Times:\n\nDocument: The New York Times:\n\nDocument: The New York Times:\n\nDocument: The New York Times:\n\nDocument: The New York Times:\n\nDocument: The New York Times:\n\nDocument: The New York Times:\n\nDocument: The New York Times:\n\nDocument: The New York Times:",
+      "retrieved_ids": [
+        "Metropolismania",
+        "Aryeh Levin",
+        "Richard Viguerie",
+        "Hero (Mariah Carey song)",
+        "Helix (TV series)"
+      ],
+      "relevant_ids": [
+        "Dave Johnson (announcer)",
+        "Dave Johnson (announcer)",
+        "John Henry (horse)",
+        "Dave Johnson (announcer)"
+      ],
+      "recall_at_k": 0.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8865832470000896,
+      "generation_time_s": 8.277745834999905,
+      "total_time_s": 11.210259353000083,
+      "generated_tokens": 128
+    },
+    {
+      "query": "where does the pulmonary artery take blood to",
+      "gold_answers": [
+        "the lungs"
+      ],
+      "prediction": "<unused6237> fetus.\n\n<unused6236> to the heart.\n\nThe pulmonary artery is the main artery that supplies the pulmonary veins. The pulmonary artery is the main artery that supplies the pulmonary veins. The pulmonary artery is the main artery that supplies the pulmonary veins. The pulmonary artery is the main artery that supplies the veins. The pulmonary artery is the main artery that supplies the veins. The pulmonary artery is the main artery that supplies the veins. The pulmonary artery is the main artery that supplies the veins.\n\nThe pulmonary artery is the main artery that supplies the veins. The pulmonary artery is the main artery that supplies the veins. The pulmonary artery is the main",
+      "retrieved_ids": [
+        "Fetal circulation",
+        "Coronary circulation",
+        "Fetus",
+        "Pulmonary vein"
+      ],
+      "relevant_ids": [
+        "Pulmonary artery",
+        "Foramen secundum",
+        "Artery",
+        "Pulmonary artery",
+        "Fetal circulation",
+        "Pulmonary artery banding",
+        "Pulmonary artery banding",
+        "Pulmonary artery banding",
+        "Pulmonary artery",
+        "Pulmonary circulation",
+        "Cardiac physiology",
+        "Pulmonary artery",
+        "Aortic arches",
+        "Pulmonary artery",
+        "Bronchial artery",
+        "Willis J. Potts",
+        "Major aortopulmonary collateral artery",
+        "Biofluid dynamics",
+        "Dextro-Transposition of the great arteries",
+        "Blalock\u2013Taussig shunt",
+        "Bilharzial cor pulmonale",
+        "Bilharzial cor pulmonale",
+        "Blalock\u2013Taussig shunt",
+        "Cardiac physiology",
+        "Foramen of Panizza",
+        "Pulmonary atresia",
+        "Atrial septostomy",
+        "Major aortopulmonary collateral artery",
+        "Circulatory system",
+        "Dextro-Transposition of the great arteries",
+        "Rasmussen's aneurysm",
+        "Cardiology",
+        "Blood vessel",
+        "Bronchial artery",
+        "Pulmonary thromboendarterectomy",
+        "Circulatory system",
+        "Pulmonary circulation",
+        "Systole",
+        "Fetus",
+        "Pulmonary valve stenosis",
+        "Levo-Transposition of the great arteries",
+        "Vein",
+        "Circulatory system",
+        "Ibn al-Nafis",
+        "Vein",
+        "Cardiac shunt",
+        "Obesity hypoventilation syndrome",
+        "Tuberculosis",
+        "Pulmonary embolism",
+        "Heart",
+        "Blood vessel",
+        "Transposition of the great vessels",
+        "Venous blood",
+        "Pulmonary circulation",
+        "Renal vein thrombosis",
+        "Circulatory system",
+        "Circulatory system"
+      ],
+      "recall_at_k": 0.05405405405405406,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.8692167809999773,
+      "generation_time_s": 8.291424162999874,
+      "total_time_s": 11.20973300899982,
+      "generated_tokens": 128
+    },
+    {
+      "query": "where did the doctrine of once saved always saved come from",
+      "gold_answers": [
+        "1689"
+      ],
+      "prediction": "http://www.christianity.org/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history/christian-history",
+      "retrieved_ids": [
+        "History of the Calvinist\u2013Arminian debate",
+        "Creation Seventh Day Adventist Church",
+        "Perseverance of the saints",
+        "Church of God in Christ",
+        "Teachings of Ellen G. White"
+      ],
+      "relevant_ids": [
+        "Perseverance of the saints"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 2.865204201000097,
+      "generation_time_s": 8.262843956000097,
+      "total_time_s": 11.175621409000087,
+      "generated_tokens": 128
+    },
+    {
+      "query": "when did piracy hit its apex in the caribbean",
+      "gold_answers": [
+        "1660s to 1730s"
+      ],
+      "prediction": "<unused6237> the 17th century.\n\n<unused6236>. The pirates were able to take advantage of the new technology and the new technology of the Caribbean, and the Caribbean. The pirates were able to use the new technology to attack and capture the ships of the British and the British colonies. The pirates were able to use the new technology to attack the British ships and the British ships. The pirates were able to use the new technology to attack the British ships and the British ships. The pirates were able to use the new technology to attack the British ships and the British ships. The pirates were able to use the new technology to attack the British ships",
+      "retrieved_ids": [
+        "Piracy in the Caribbean",
+        "True Caribbean Pirates"
+      ],
+      "relevant_ids": [
+        "Piracy in the Caribbean",
+        "Piracy in the Caribbean"
+      ],
+      "recall_at_k": 1.0,
+      "em": 0.0,
+      "f1": 0.021505376344086023,
+      "retrieval_time_s": 2.848920856999939,
+      "generation_time_s": 8.035676243000125,
+      "total_time_s": 10.931119723999927,
+      "generated_tokens": 128
+    },
+    {
+      "query": "how long do finch eggs take to hatch",
+      "gold_answers": [
+        "12 to 14 days"
+      ],
+      "prediction": "<unused6237> hours.\n\n<unused6236>. The female lays the eggs in the nest, and the male lays the eggs. The female lays the eggs in the nest. The female lays the eggs in the nest. The female lays the eggs in the nest. The female lays the eggs. The female lays the eggs. The female lays the eggs. The female lays the eggs. The female lays the eggs. The female lays the eggs. The female lays the eggs. The female lays the eggs. The female lays the eggs. The female lays the eggs. The female lays the eggs. The female lays the eggs. The female lays the eggs. The",
+      "retrieved_ids": [
+        "Fannia scalaris",
+        "Seepage salamander",
+        "House finch",
+        "Swainson's warbler",
+        "Gouldian finch"
+      ],
+      "relevant_ids": [
+        "House finch",
+        "Brahminy starling"
+      ],
+      "recall_at_k": 0.5,
+      "em": 0.0,
+      "f1": 0.0,
+      "retrieval_time_s": 3.0457844640000076,
+      "generation_time_s": 7.796032068999921,
+      "total_time_s": 10.89171766200002,
+      "generated_tokens": 128
+    }
+  ]
+}
