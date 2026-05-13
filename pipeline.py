@@ -22,8 +22,8 @@ from transformers.modeling_outputs import BaseModelOutput
 from safetensors import safe_open
 from safetensors.torch import save_file
 
-DEFAULT_EMBEDDING_MODEL = "google/t5gemma-2-270m-270m"
-DEFAULT_GENERATOR_MODEL = "google/t5gemma-2-270m-270m"
+DEFAULT_EMBEDDING_MODEL = "google/flan-t5-large"
+DEFAULT_GENERATOR_MODEL = "google/flan-t5-large"
 DEFAULT_TOP_K = 5
 DEFAULT_MAX_NEW_TOKENS = 128
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
