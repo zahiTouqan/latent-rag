@@ -169,9 +169,22 @@ class Retriever:
             for passage in self.passages:
                 handle.write(json.dumps(asdict(passage), ensure_ascii=True) + "\n")
 
+        import gc
+        import torch
+        
+        # Free up unused memory before the massive write
+        gc.collect()
+        
+        # Ensure tensors are contiguous in memory to prevent safetensors from duplicating them
+        self.all_latents = {k: v.contiguous() for k, v in self.all_latents.items()}
+        
         # Save massive latents via safetensors
         print("Saving Latent Sequences to Safetensors...")
         save_file(self.all_latents, str(index_dir / "latents.safetensors"))
+        
+        # Clear out the dictionary immediately after saving to free RAM for the next steps
+        self.all_latents.clear()
+        gc.collect()
 
         config = IndexConfig(
             embedding_model=self.embedding_model,
