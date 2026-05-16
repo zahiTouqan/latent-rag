@@ -80,3 +80,32 @@ As the decoder generates the answer word-by-word, the following happens at every
 4. **Generate Token:** The decoder uses that pulled information to predict the next word in the sequence.
 
 Instead of appending the embeddings to an output, the retrieved embeddings act as a **static, continuous database (Keys and Values)**. As the decoder generates text dynamically, it repeatedly queries this database via dot-product multiplication to pull the exact semantic features it needs to answer the question.
+
+---
+
+## 3. The Pipeline Shift: Where Do the Embeddings Actually Enter?
+
+A major conceptual hurdle in Latent RAG is understanding that the text passages literally disappear from the pipeline during generation. Here is a side-by-side comparison of where the data enters:
+
+### Standard Text-Based RAG (The Normal Way)
+In a standard RAG system, the generator always deals with **Text strings**.
+1. **Search:** The system retrieves text strings (e.g., `"Reba McEntire sang Does He Love You."`)
+2. **Concatenation:** The retrieved text is pasted next to the user's query into one massive string:
+   `Text = "Context: Reba McEntire sang... Question: Who sings with Reba?"`
+3. **The Encoder:** The model's Encoder reads this massive string of text and converts the whole thing into embeddings *dynamically*.
+4. **The Decoder:** The Decoder then generates the answer.
+
+### Latent RAG (Dense Memory Injection)
+In Latent RAG, the retrieved passages **never exist as text during generation**. They enter the system directly as **Tensor Matrices**.
+
+**Step 1: The Offline Pre-computation (Where the text used to be)**
+During the index building phase, the text passages are run through the Encoder ahead of time. The text is converted into mathematical matrices (the latent embeddings) and saved to a database (e.g., a `.safetensors` file). *At this exact moment, the text strings are discarded.*
+
+**Step 2: The Online Generation (Where the embeddings enter)**
+During inference, when a user asks a question:
+1. **Search:** The retriever searches the index and pulls out the **pre-computed matrices (the embeddings)**, not text.
+2. **Bypassing the Encoder:** These matrices are *not* passed through the model's Encoder, because they are already encoded. 
+3. **The Injection Point:** The system encodes *only* the user's short query text, and then stitches the query embedding together with the retrieved passage matrices. 
+4. **The Decoder:** These combined matrices are handed straight to the **Decoder** via the `encoder_outputs` argument.
+
+**In summary:** In standard RAG, the passages enter the pipeline at the very beginning as **Text Strings** fed into the **Encoder**. In Latent RAG, the passages enter the pipeline right at the very end as **Tensor Matrices** injected directly into the **Decoder**.

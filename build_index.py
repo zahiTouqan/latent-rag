@@ -92,7 +92,7 @@ def main() -> None:
             "Document-level recall may be inaccurate unless the corpus provides explicit doc_id values."
         )
     retriever = Retriever(embedding_model=args.embedding_model)
-    retriever.build_index(passages, batch_size=args.batch_size)
+    retriever.build_index(passages, batch_size=args.batch_size, index_dir=args.index_dir)
     retriever.save(
         index_dir=args.index_dir,
         corpus_path=str(corpus_path),
