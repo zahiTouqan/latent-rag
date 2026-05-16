@@ -128,8 +128,10 @@ class Retriever:
 
         saved_latents = []
         for i in range(len(texts)):
-            # Robustly extract only valid text tokens using the boolean mask (fixes left-padding bugs)
-            true_latents = latents[i][attention_mask[i]]
+            # Robustly extract only valid text tokens using the boolean mask
+            # CLONE AND CONTIGUOUS: Prevents PyTorch from keeping the massive batch padding
+            # in memory, and prevents Safetensors from crashing during save.
+            true_latents = latents[i][attention_mask[i]].clone().contiguous()
             saved_latents.append(true_latents)
 
         return saved_latents
@@ -172,17 +174,14 @@ class Retriever:
         import gc
         import torch
         
-        # Free up unused memory before the massive write
+        # Force garbage collection to clear up RAM before saving
         gc.collect()
         
-        # Ensure tensors are contiguous in memory to prevent safetensors from duplicating them
-        self.all_latents = {k: v.contiguous() for k, v in self.all_latents.items()}
-        
-        # Save massive latents via safetensors
+        # Save massive latents via safetensors directly
         print("Saving Latent Sequences to Safetensors...")
         save_file(self.all_latents, str(index_dir / "latents.safetensors"))
         
-        # Clear out the dictionary immediately after saving to free RAM for the next steps
+        # Clear out the dictionary immediately after saving to free RAM
         self.all_latents.clear()
         gc.collect()
 
