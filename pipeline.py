@@ -3,7 +3,7 @@ pipeline.py - Flexible RAG pipeline supporting traditional and latent-space mode
 
 Retrievers:
     BGERTRetriever   - BGE dense retrieval (AutoModel + [CLS] pooling)
-    LatentRetriever  - T5 encoder latent retrieval (FAISS + safetensors)
+    LatentRetriever  - T5 encoder latent retrieval (safetensors + MaxSim)
 
 Generators:
     TextGenerator    - causal LM text generation from prompted passages
@@ -14,6 +14,7 @@ Pipeline:
 """
 from __future__ import annotations
 
+import gc
 import json
 import random
 import time
@@ -30,24 +31,18 @@ from transformers import AutoModel, AutoModelForCausalLM, AutoModelForSeq2SeqLM,
 from transformers.modeling_outputs import BaseModelOutput
 
 DEFAULT_BGE_MODEL = "BAAI/bge-base-en-v1.5"
-DEFAULT_LATENT_MODEL = "google/t5gemma-2-270m-270m"
+DEFAULT_LATENT_MODEL = "google/t5gemma-2b-2b-ul2"
 DEFAULT_TEXT_GENERATOR = "Qwen/Qwen3.5-0.8B"
-DEFAULT_LATENT_GENERATOR = "google/t5gemma-2-270m-270m"
+DEFAULT_LATENT_GENERATOR = "google/t5gemma-2b-2b-ul2"
+DEFAULT_EMBEDDING_MODEL = DEFAULT_LATENT_MODEL
+DEFAULT_GENERATOR_MODEL = DEFAULT_LATENT_GENERATOR
 DEFAULT_TOP_K = 5
 DEFAULT_MAX_NEW_TOKENS = 128
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 SEED = 42
 
-PROMPT_PREFIX = """Answer the following question using only the provided context.
-If the answer is not supported by the context, say you do not know.
-
-Context:
-"""
-PROMPT_SUFFIX_TEMPLATE = """
-
-Question: {question}
-
-Answer:"""
+PROMPT_PREFIX = "Context:\n"
+PROMPT_SUFFIX_TEMPLATE = "\n\nQuestion: {question}\n\nShort answer (1-5 words):"
 
 
 @dataclass
@@ -71,10 +66,10 @@ class Result:
 
 @dataclass
 class IndexConfig:
-    retriever_type: str
     embedding_model: str
     corpus_path: str
     passage_count: int
+    retriever_type: str = "latent"
     max_docs: int | None = None
     doc_id_provided_count: int | None = None
     doc_id_missing_count: int | None = None
@@ -103,6 +98,7 @@ def _generator_dtype() -> torch.dtype:
 
 
 def _load_to_device(model: torch.nn.Module, label: str) -> torch.nn.Module:
+    """Move *model* to DEVICE, falling back to CPU on OOM."""
     if DEVICE != "cuda":
         return model.to("cpu")
     try:
@@ -112,10 +108,6 @@ def _load_to_device(model: torch.nn.Module, label: str) -> torch.nn.Module:
         print(f"Warning: GPU OOM when loading {label}. Falling back to CPU.")
         return model.to("cpu")
 
-
-# ---------------------------------------------------------------------------
-# BGERTRetriever  (traditional dense retrieval with BGE/BERT embeddings)
-# ---------------------------------------------------------------------------
 
 class BGERTRetriever:
     def __init__(self, embedding_model: str = DEFAULT_BGE_MODEL):
@@ -225,10 +217,6 @@ class BGERTRetriever:
         return passages, None, elapsed
 
 
-# ---------------------------------------------------------------------------
-# LatentRetriever  (T5 encoder latent retrieval with safetensors storage)
-# ---------------------------------------------------------------------------
-
 class LatentRetriever:
     def __init__(self, embedding_model: str = DEFAULT_LATENT_MODEL):
         self.embedding_model = embedding_model
@@ -237,16 +225,16 @@ class LatentRetriever:
         dtype = _generator_dtype() if DEVICE == "cuda" else torch.float32
         full_model = AutoModelForSeq2SeqLM.from_pretrained(embedding_model, torch_dtype=dtype)
         self.model = _load_to_device(full_model.get_encoder(), "latent encoder").eval()
-        self.index: faiss.IndexFlatIP | None = None
         self.passages: list[Passage] = []
         self.all_latents: dict[str, torch.Tensor] = {}
-        self.latent_file: str | None = None
+        self.raw_latents_cpu: list[torch.Tensor] = []
 
     @torch.no_grad()
-    def _embed(self, texts: list[str]) -> tuple[np.ndarray, list[torch.Tensor]]:
+    def _embed(self, texts: list[str], is_query: bool = False) -> list[torch.Tensor]:
         device = next(self.model.parameters()).device
+        prefix = "Query: " if is_query else "Document: "
         encoded = self.tokenizer(
-            texts,
+            [prefix + text for text in texts],
             padding=True,
             truncation=True,
             max_length=512,
@@ -254,37 +242,51 @@ class LatentRetriever:
         ).to(device)
         outputs = self.model(**encoded)
         latents = outputs.last_hidden_state.cpu()
-        attention_mask = encoded["attention_mask"].cpu()
-        faiss_vecs = []
+        attention_mask = encoded["attention_mask"].cpu().bool()
+
         saved_latents = []
         for i in range(len(texts)):
-            seq_len = attention_mask[i].sum().item()
-            true_latents = latents[i, :seq_len, :]
-            saved_latents.append(true_latents)
-            mean_pooled = true_latents.mean(dim=0).unsqueeze(0)
-            faiss_vec = F.normalize(mean_pooled, p=2, dim=-1).float().numpy()
-            faiss_vecs.append(faiss_vec)
-        return np.concatenate(faiss_vecs, axis=0), saved_latents
+            saved_latents.append(latents[i][attention_mask[i]].clone().contiguous())
+        return saved_latents
 
-    def build_index(self, passages: list[Passage], batch_size: int = 64) -> None:
+    def build_index(
+        self,
+        passages: list[Passage],
+        batch_size: int = 64,
+        index_dir: str | Path | None = None,
+    ) -> None:
         if not passages:
             raise ValueError("Cannot build an index with zero passages.")
         self.passages = passages
         n_batches = (len(passages) + batch_size - 1) // batch_size
         print(f"Embedding {len(passages)} passages ({n_batches} batches)...")
-        all_embeddings = []
+
         self.all_latents = {}
+        shard_idx = 0
+        shard_size = 2000
+        output_dir = Path(index_dir) if index_dir is not None else None
+        if output_dir is not None:
+            output_dir.mkdir(parents=True, exist_ok=True)
+
         for i, start in enumerate(range(0, len(passages), batch_size)):
             batch = passages[start : start + batch_size]
-            faiss_batch, latents_batch = self._embed([p.text for p in batch])
-            all_embeddings.append(faiss_batch)
-            for p, lat in zip(batch, latents_batch):
-                self.all_latents[p.passage_id] = lat
+            latents_batch = self._embed([passage.text for passage in batch], is_query=False)
+            for passage, latents in zip(batch, latents_batch):
+                self.all_latents[passage.passage_id] = latents
+
+            if output_dir is not None and len(self.all_latents) >= shard_size:
+                save_file(self.all_latents, str(output_dir / f"latents_{shard_idx}.safetensors"))
+                self.all_latents.clear()
+                shard_idx += 1
+                gc.collect()
+
             if (i + 1) % 10 == 0 or i + 1 == n_batches:
                 print(f"  batch {i + 1}/{n_batches}")
-        embeddings = np.concatenate(all_embeddings, axis=0)
-        self.index = faiss.IndexFlatIP(embeddings.shape[1])
-        self.index.add(embeddings)
+
+        if output_dir is not None and self.all_latents:
+            save_file(self.all_latents, str(output_dir / f"latents_{shard_idx}.safetensors"))
+            self.all_latents.clear()
+            gc.collect()
 
     def save(
         self,
@@ -294,16 +296,18 @@ class LatentRetriever:
         doc_id_provided_count: int | None = None,
         doc_id_missing_count: int | None = None,
     ) -> None:
-        if self.index is None:
-            raise ValueError("Index has not been built yet.")
         index_dir = Path(index_dir)
         index_dir.mkdir(parents=True, exist_ok=True)
-        faiss.write_index(self.index, str(index_dir / "index.faiss"))
         with (index_dir / "metadata.jsonl").open("w", encoding="utf-8") as handle:
             for passage in self.passages:
                 handle.write(json.dumps(asdict(passage), ensure_ascii=True) + "\n")
-        print("Saving latent sequences to safetensors...")
-        save_file(self.all_latents, str(index_dir / "latents.safetensors"))
+
+        if self.all_latents:
+            print("Saving latent sequences to safetensors...")
+            save_file(self.all_latents, str(index_dir / "latents_0.safetensors"))
+            self.all_latents.clear()
+            gc.collect()
+
         config = IndexConfig(
             retriever_type="latent",
             embedding_model=self.embedding_model,
@@ -318,51 +322,76 @@ class LatentRetriever:
 
     def load(self, index_dir: str | Path) -> IndexConfig:
         index_dir = Path(index_dir)
-        index_path = index_dir / "index.faiss"
         metadata_path = index_dir / "metadata.jsonl"
-        self.latent_file = str(index_dir / "latents.safetensors")
-        if not index_path.exists():
-            raise FileNotFoundError(f"FAISS index not found: {index_path}")
         if not metadata_path.exists():
             raise FileNotFoundError(f"Metadata file not found: {metadata_path}")
-        if not Path(self.latent_file).exists():
-            raise FileNotFoundError(f"Safetensors latents not found: {self.latent_file}")
-        self.index = faiss.read_index(str(index_path))
+
         self.passages = []
         with metadata_path.open(encoding="utf-8") as handle:
             for line in handle:
                 record = json.loads(line)
                 self.passages.append(Passage(**record))
+
         config = load_index_config(index_dir)
-        if self.index.ntotal != len(self.passages):
+        print("Loading sequence latents into RAM for exhaustive MaxSim search...")
+        shard_files = sorted(index_dir.glob("latents_*.safetensors"))
+        if not shard_files:
+            legacy_file = index_dir / "latents.safetensors"
+            if legacy_file.exists():
+                shard_files = [legacy_file]
+            else:
+                raise FileNotFoundError(f"Safetensors latents not found in {index_dir}")
+
+        latents_by_id: dict[str, torch.Tensor] = {}
+        for shard_file in shard_files:
+            with safe_open(str(shard_file), framework="pt", device="cpu") as handle:
+                for key in handle.keys():
+                    latents_by_id[key] = handle.get_tensor(key)
+
+        self.raw_latents_cpu = []
+        for passage in self.passages:
+            self.raw_latents_cpu.append(latents_by_id[passage.passage_id])
+
+        if len(self.raw_latents_cpu) != len(self.passages):
             raise ValueError(
-                f"Index and metadata size mismatch: index has {self.index.ntotal} rows "
-                f"but metadata has {len(self.passages)} passages."
+                "Metadata size mismatch: "
+                f"latents file has {len(self.raw_latents_cpu)} rows but metadata has {len(self.passages)} passages."
             )
         return config
 
     def retrieve(self, query: str, top_k: int) -> tuple[list[Passage], list[torch.Tensor], float]:
-        if self.index is None:
+        if not self.passages or not self.raw_latents_cpu:
             raise ValueError("Retriever index is not loaded.")
         if top_k <= 0:
             raise ValueError("top_k must be positive.")
+
         t0 = time.perf_counter()
-        query_faiss, _ = self._embed([query])
-        _, indices = self.index.search(query_faiss, min(top_k, len(self.passages)))
-        passages = [self.passages[idx] for idx in indices[0] if idx != -1]
         device = next(self.model.parameters()).device
-        latents_list = []
-        with safe_open(self.latent_file, framework="pt", device="cpu") as f:
-            for p in passages:
-                lat = f.get_tensor(p.passage_id).to(device)
-                latents_list.append(lat)
+        query_latents = self._embed([query], is_query=True)[0].to(device).float()
+        q_norm = F.normalize(query_latents, p=2, dim=-1)
+
+        chunk_size = 1000
+        all_scores = []
+        for i in range(0, len(self.raw_latents_cpu), chunk_size):
+            chunk = self.raw_latents_cpu[i : i + chunk_size]
+            padded_chunk = torch.nn.utils.rnn.pad_sequence(chunk, batch_first=True).to(device).float()
+            padded_norm = F.normalize(padded_chunk, p=2, dim=-1)
+            lengths = torch.tensor([len(item) for item in chunk], device=device)
+            max_len = padded_chunk.shape[1]
+            mask = torch.arange(max_len, device=device).unsqueeze(0) < lengths.unsqueeze(1)
+            sim = torch.einsum("qd,npd->nqp", q_norm, padded_norm)
+            sim = sim.masked_fill(~mask.unsqueeze(1), -1e9)
+            max_sim, _ = sim.max(dim=2)
+            all_scores.append(max_sim.sum(dim=1).cpu())
+
+        scores = torch.cat(all_scores, dim=0)
+        _, top_indices = torch.topk(scores, min(top_k, len(self.passages)))
+        top_indices_list = top_indices.tolist()
+        passages = [self.passages[idx] for idx in top_indices_list]
+        latents_list = [self.raw_latents_cpu[idx].to(device) for idx in top_indices_list]
         elapsed = time.perf_counter() - t0
         return passages, latents_list, elapsed
 
-
-# ---------------------------------------------------------------------------
-# TextGenerator  (causal LM, text prompt from retrieved passages)
-# ---------------------------------------------------------------------------
 
 class TextGenerator:
     def __init__(
@@ -388,9 +417,9 @@ class TextGenerator:
         context_blocks = [f"[{idx}] {p.text.strip()}" for idx, p in enumerate(passages, start=1)]
         context = "\n\n".join(context_blocks)
         user_content = (
-            f"Answer the following question using only the provided context.\n"
-            f"If the answer is not supported by the context, say you do not know.\n\n"
-            f"Context:\n{context}\n\nQuestion: {query}"
+            f"Context:\n{context}\n\n"
+            f"Question: {query}\n\n"
+            f"Short answer (1-5 words):"
         )
         if hasattr(self.tokenizer, "chat_template") and self.tokenizer.chat_template is not None:
             messages = [{"role": "user", "content": user_content}]
@@ -425,10 +454,6 @@ class TextGenerator:
         }
         return answer, stats
 
-
-# ---------------------------------------------------------------------------
-# LatentGenerator  (encoder-decoder, latent-space injection into decoder)
-# ---------------------------------------------------------------------------
 
 class LatentGenerator:
     def __init__(
@@ -470,7 +495,7 @@ class LatentGenerator:
     ) -> tuple[str, dict]:
         device = next(self.model.parameters()).device
         q_enc = self.tokenizer(
-            f"Answer the question using the context: {query}",
+            f"Question: {query}\n\nShort answer:",
             return_tensors="pt",
             truncation=True,
             max_length=512,
@@ -478,36 +503,37 @@ class LatentGenerator:
         q_latents = self.model.get_encoder()(**q_enc).last_hidden_state[0]
         if passage_latents is None:
             passage_latents = [self._encode_passage(p) for p in passages]
-        batch_latents = [q_latents] + passage_latents
-        combined_latents = torch.cat(batch_latents, dim=0).unsqueeze(0)
+        combined_latents = torch.cat([q_latents] + passage_latents, dim=0).unsqueeze(0)
         encoder_outputs_obj = BaseModelOutput(last_hidden_state=combined_latents)
         start_token_id = (
             getattr(self.model.generation_config, "decoder_start_token_id", None)
             or getattr(self.model.config, "decoder_start_token_id", None)
+            or getattr(self.model.config, "bos_token_id", None)
             or self.tokenizer.pad_token_id
         )
+        decoder_input_ids = torch.tensor([[start_token_id]], device=device)
+
         t0 = time.perf_counter()
-        output_ids = self.model.generate(
-            encoder_outputs=encoder_outputs_obj,
-            decoder_input_ids=torch.tensor([[start_token_id]], device=device),
-            max_new_tokens=self.max_new_tokens,
-            do_sample=False,
-            no_repeat_ngram_size=3,
-            pad_token_id=self.tokenizer.pad_token_id,
-            eos_token_id=self.tokenizer.eos_token_id,
-        )
+        generated_tokens = 0
+        for _ in range(self.max_new_tokens):
+            outputs = self.model(
+                encoder_outputs=encoder_outputs_obj,
+                decoder_input_ids=decoder_input_ids,
+            )
+            next_token = torch.argmax(outputs.logits[:, -1, :], dim=-1).unsqueeze(-1)
+            decoder_input_ids = torch.cat([decoder_input_ids, next_token], dim=-1)
+            generated_tokens += 1
+            if next_token.item() == self.tokenizer.eos_token_id:
+                break
+
         generation_time = time.perf_counter() - t0
-        answer = self.tokenizer.decode(output_ids[0, 1:], skip_special_tokens=True).strip()
+        answer = self.tokenizer.decode(decoder_input_ids[0, 1:], skip_special_tokens=True).strip()
         stats = {
-            "generated_tokens": int(output_ids.shape[-1]) - 1,
+            "generated_tokens": generated_tokens,
             "generation_time_s": generation_time,
         }
         return answer, stats
 
-
-# ---------------------------------------------------------------------------
-# RAGPipeline  (generic orchestrator)
-# ---------------------------------------------------------------------------
 
 class RAGPipeline:
     def __init__(

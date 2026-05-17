@@ -1,8 +1,8 @@
 """
-build_index.py - Build and persist a FAISS passage index.
+build_index.py - Build and persist a passage index.
 
 Usage:
-    python3 build_index.py --corpus_path data/passages.jsonl --index_dir artifacts/index --retriever_type bge
+    python3 build_index.py --corpus_path data/passages.jsonl --index_dir artifacts/index_bge --retriever_type bge
     python3 build_index.py --corpus_path data/passages.jsonl --index_dir artifacts/index_latent --retriever_type latent
 """
 from __future__ import annotations
@@ -111,10 +111,11 @@ def main() -> None:
 
     if args.retriever_type == "bge":
         retriever = BGERTRetriever(embedding_model=args.embedding_model)
+        retriever.build_index(passages, batch_size=args.batch_size)
     else:
         retriever = LatentRetriever(embedding_model=args.embedding_model)
+        retriever.build_index(passages, batch_size=args.batch_size, index_dir=args.index_dir)
 
-    retriever.build_index(passages, batch_size=args.batch_size)
     retriever.save(
         index_dir=args.index_dir,
         corpus_path=str(corpus_path),
