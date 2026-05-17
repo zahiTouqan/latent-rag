@@ -1,29 +1,38 @@
-import json
-import os
+from __future__ import annotations
 
-files = [
-    "results_baseline.json",
-    "results_t5gemma_embed.json",
-    "results_T5Gemma_2B_embedings.json"
+import json
+from pathlib import Path
+
+
+COLUMNS = [
+    "em",
+    "f1",
+    "recall@5",
+    "answer_support@5",
+    "visible_special_tokens",
+    "max_repeated_3gram",
+    "latency_p50_ms",
+    "latency_p95_ms",
 ]
 
-print("| File | Generator | Embedding | EM | F1 | Recall@5 | Total Time |")
-print("|---|---|---|---|---|---|---|")
 
-for f in files:
-    if os.path.exists(f):
-        with open(f, 'r') as fp:
-            data = json.load(fp)
-            c = data.get("config", {})
-            m = data.get("metrics", {})
-            gen = c.get("generator_model", "N/A").split('/')[-1]
-            idx = c.get("index", {})
-            if isinstance(idx, dict):
-                emb = idx.get("embedding_model", "N/A").split('/')[-1]
-            else:
-                emb = "N/A"
-            em = m.get("em", 0)
-            f1 = m.get("f1", 0)
-            rec = m.get("recall@5", 0)
-            time = m.get("total_time_s", 0)
-            print(f"| {f} | {gen} | {emb} | {em:.4f} | {f1:.4f} | {rec:.4f} | {time:.2f}s |")
+def main() -> None:
+    files = sorted(Path("results").glob("results_*.json"), key=lambda path: path.stat().st_mtime)
+    if not files:
+        print("No result files found in results/")
+        return
+
+    header = f"{'File':<42s} {'Mode':<12s}" + "".join(f"{column:>24s}" for column in COLUMNS)
+    print(header)
+    print("-" * len(header))
+    for result_file in files:
+        with result_file.open(encoding="utf-8") as handle:
+            data = json.load(handle)
+        mode = data.get("config", {}).get("mode", "N/A")
+        metrics = data.get("metrics", {})
+        values = "".join(f"{float(metrics.get(column, 0.0)):>24.4f}" for column in COLUMNS)
+        print(f"{result_file.name:<42s} {mode:<12s}{values}")
+
+
+if __name__ == "__main__":
+    main()

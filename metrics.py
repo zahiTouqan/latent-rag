@@ -37,6 +37,9 @@ def _normalise(text: str) -> str:
     # Collapse whitespace
     return " ".join(text.split())
 
+def normalise_answer(text: str) -> str:
+    return _normalise(text)
+
 def exact_match(prediction: str, gold_answers: list[str]) -> float:
     pred = _normalise(prediction)
     return float(any(_normalise(a) == pred for a in gold_answers))

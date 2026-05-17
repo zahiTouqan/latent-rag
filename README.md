@@ -104,9 +104,12 @@ The index directory will contain:
 - `metadata.jsonl`
 - `config.json`
 
-For `--retriever_type latent`, the index directory contains `latents_*.safetensors`,
+For `--retriever_type latent`, the index directory contains
+`retrieval_latents_*.safetensors`, `generation_latents_*.safetensors`,
 `metadata.jsonl`, and `config.json`. Latent retrieval uses exhaustive MaxSim over
-stored token-level encoder states rather than FAISS vectors.
+stored token-level encoder states rather than FAISS vectors. Generation latents are
+stored separately from retrieval latents so the decoder does not consume
+`Document:`-prefixed retrieval representations.
 
 ## Evaluate
 
@@ -142,13 +145,17 @@ Useful options:
 - `--top_k 5`
 - `--max_new_tokens 128`
 - `--generator_model Qwen/Qwen3.5-0.8B`
+- `--mode bge+t5text` or `--mode t5+t5text` for T5Gemma2 text-generation controls
+- `--warmup`: run one untimed warm-up query before measuring latency
+- `--quality_gate --max_samples 5`: fail fast on visible special tokens, repetition, or non-EOS truncation
 - `--bertscore`
 
 ## Metrics reported
 
 - End-to-end quality: `em`, `f1`, optional `bertscore_*`
-- Retrieval: `recall@k` when the eval file includes `relevant_ids`
+- Retrieval: `recall@k` when the eval file includes `relevant_ids`, plus `answer_support@k`
 - Efficiency: mean latency fields, `latency_p50_ms`, `latency_p95_ms`
+- Generation health: EOS rate, visible special-token count, repeated 3-gram count
 
 ## Results
 

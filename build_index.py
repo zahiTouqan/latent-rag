@@ -4,6 +4,10 @@ build_index.py - Build and persist a passage index.
 Usage:
     python3 build_index.py --corpus_path data/passages.jsonl --index_dir artifacts/index_bge --retriever_type bge
     python3 build_index.py --corpus_path data/passages.jsonl --index_dir artifacts/index_latent --retriever_type latent
+
+Latent indexes store separate safetensors shards for retrieval and generation:
+    retrieval_latents_*.safetensors
+    generation_latents_*.safetensors
 """
 from __future__ import annotations
 

@@ -4,22 +4,28 @@ evaluate.py - Evaluate RAG pipeline on a local QA dataset.
 Usage:
     python3 evaluate.py --index_dir artifacts/index_bge --eval_path data/eval.jsonl --mode bge+text
     python3 evaluate.py --index_dir artifacts/index_bge --eval_path data/eval.jsonl --mode bge+latent
+    python3 evaluate.py --index_dir artifacts/index_bge --eval_path data/eval.jsonl --mode bge+t5text
     python3 evaluate.py --index_dir artifacts/index_latent --eval_path data/eval.jsonl --mode t5+text
     python3 evaluate.py --index_dir artifacts/index_latent --eval_path data/eval.jsonl --mode t5+latent
+    python3 evaluate.py --index_dir artifacts/index_latent --eval_path data/eval.jsonl --mode t5+t5text
 """
 from __future__ import annotations
 
 import argparse
 import json
+import platform
+import subprocess
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+import torch
+import transformers
 from tqdm import tqdm
 
-from metrics import exact_match, recall_at_k, token_f1
+from metrics import exact_match, normalise_answer, recall_at_k, token_f1
 from pipeline import (
     DEFAULT_TEXT_GENERATOR,
     DEFAULT_LATENT_GENERATOR,
@@ -29,6 +35,7 @@ from pipeline import (
     LatentGenerator,
     LatentRetriever,
     RAGPipeline,
+    Seq2SeqTextGenerator,
     TextGenerator,
     load_index_config,
 )
@@ -70,6 +77,28 @@ def _normalise_list(raw_value: Any) -> list[str]:
     return []
 
 
+def answer_present_in_context(contexts: list[str], answers: list[str]) -> float:
+    normalised_context = normalise_answer("\n".join(contexts))
+    for answer in answers:
+        answer_text = normalise_answer(answer)
+        if answer_text and answer_text in normalised_context:
+            return 1.0
+    return 0.0
+
+
+def git_revision() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            check=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return result.stdout.strip() or None
+
+
 def load_eval_examples(
     eval_path: Path,
     max_samples: int | None,
@@ -84,7 +113,7 @@ def load_eval_examples(
         question_raw = record.get(QUESTION_FIELD)
         question = str(question_raw).strip() if question_raw is not None else ""
         answers = _normalise_list(record.get(ANSWER_FIELD))
-        relevant_ids = _normalise_list(record.get(RELEVANT_IDS_FIELD))
+        relevant_ids = list(dict.fromkeys(_normalise_list(record.get(RELEVANT_IDS_FIELD))))
 
         if not question or not answers:
             skipped += 1
@@ -139,7 +168,10 @@ def build_pipeline(
     else:
         raise ValueError(f"Unknown mode: {mode}")
 
-    if mode.endswith("+text"):
+    if mode.endswith("+t5text"):
+        gen_model = generator_model or DEFAULT_LATENT_GENERATOR
+        generator = Seq2SeqTextGenerator(generator_model=gen_model, max_new_tokens=max_new_tokens)
+    elif mode.endswith("+text"):
         gen_model = generator_model or DEFAULT_TEXT_GENERATOR
         generator = TextGenerator(generator_model=gen_model, max_new_tokens=max_new_tokens)
     elif mode.endswith("+latent"):
@@ -162,7 +194,7 @@ def main() -> None:
     parser.add_argument("--eval_path", required=True, help="Local .jsonl QA dataset")
     parser.add_argument(
         "--mode",
-        choices=("bge+text", "bge+latent", "t5+text", "t5+latent"),
+        choices=("bge+text", "bge+latent", "bge+t5text", "t5+text", "t5+latent", "t5+t5text"),
         default="bge+text",
         help="Pipeline mode: retriever+generator combination",
     )
@@ -180,6 +212,10 @@ def main() -> None:
     parser.add_argument("--max_new_tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS)
     parser.add_argument("--results_dir", default="results")
     parser.add_argument("--bertscore", action="store_true")
+    parser.add_argument("--warmup", action="store_true", help="Run one untimed warm-up query before evaluation")
+    parser.add_argument("--quality_gate", action="store_true", help="Fail fast on invalid generations during smoke tests")
+    parser.add_argument("--max_visible_special_tokens", type=int, default=0)
+    parser.add_argument("--max_repeated_3gram", type=int, default=3)
     args = parser.parse_args()
 
     use_bertscore = args.bertscore
@@ -215,6 +251,9 @@ def main() -> None:
         f"Pipeline mode: {args.mode} | "
         f"Index: {index_config.passage_count} passages from {index_config.corpus_path}"
     )
+    if args.warmup:
+        print("Running untimed warm-up query...")
+        pipeline.run(samples[0]["query"])
 
     use_passage_ids = args.retrieval_id_field == "passage_id"
 
@@ -224,6 +263,7 @@ def main() -> None:
     references: list[list[str]] = []
     per_query_latency_ms: list[float] = []
     recall_values: list[float] = []
+    answer_support_values: list[float] = []
 
     for sample in tqdm(samples):
         result = pipeline.run(sample["query"])
@@ -234,6 +274,7 @@ def main() -> None:
             if use_passage_ids
             else list(dict.fromkeys(result.retrieved_source_doc_ids))
         )
+        answer_support_value = answer_present_in_context(result.retrieved_texts, sample["answers"])
         metric_row = {
             "em": exact_match(result.answer, sample["answers"]),
             "f1": token_f1(result.answer, sample["answers"]),
@@ -241,12 +282,36 @@ def main() -> None:
             "generation_time_s": result.generation_time_s,
             "total_time_s": result.total_time_s,
             "generated_tokens": result.generated_tokens,
+            "ended_with_eos": float(bool(result.generation_diagnostics.get("ended_with_eos", False))),
+            "visible_special_tokens": float(result.generation_diagnostics.get("visible_special_tokens", 0)),
+            "max_repeated_3gram": float(result.generation_diagnostics.get("max_repeated_3gram", 0)),
         }
+        answer_support_values.append(answer_support_value)
 
         recall_value = None
         if sample["relevant_ids"]:
             recall_value = recall_at_k(retrieved_ids, sample["relevant_ids"], args.top_k)
             recall_values.append(recall_value)
+
+        if args.quality_gate:
+            visible_special_tokens = int(result.generation_diagnostics.get("visible_special_tokens", 0))
+            max_repeated_3gram = int(result.generation_diagnostics.get("max_repeated_3gram", 0))
+            ended_with_eos = bool(result.generation_diagnostics.get("ended_with_eos", False))
+            if visible_special_tokens > args.max_visible_special_tokens:
+                raise RuntimeError(
+                    f"Quality gate failed for query '{sample['query']}': "
+                    f"visible_special_tokens={visible_special_tokens}"
+                )
+            if max_repeated_3gram > args.max_repeated_3gram:
+                raise RuntimeError(
+                    f"Quality gate failed for query '{sample['query']}': "
+                    f"max_repeated_3gram={max_repeated_3gram}"
+                )
+            if result.generated_tokens >= args.max_new_tokens and not ended_with_eos:
+                raise RuntimeError(
+                    f"Quality gate failed for query '{sample['query']}': "
+                    "generation reached max_new_tokens without EOS"
+                )
 
         example_rows.append(
             {
@@ -254,8 +319,24 @@ def main() -> None:
                 "gold_answers": sample["answers"],
                 "prediction": result.answer,
                 "retrieved_ids": retrieved_ids,
+                "retrieved_passages": [
+                    {
+                        "passage_id": passage_id,
+                        "source_doc_id": source_doc_id,
+                        "score": score,
+                        "text": text[:1000],
+                    }
+                    for passage_id, source_doc_id, score, text in zip(
+                        result.retrieved_passage_ids,
+                        result.retrieved_source_doc_ids,
+                        result.retrieval_scores,
+                        result.retrieved_texts,
+                    )
+                ],
                 "relevant_ids": sample["relevant_ids"],
                 "recall_at_k": recall_value,
+                f"answer_support@{args.top_k}": answer_support_value,
+                "generation_diagnostics": result.generation_diagnostics,
                 **metric_row,
             }
         )
@@ -264,6 +345,7 @@ def main() -> None:
         references.append(sample["answers"])
 
     aggregate = aggregate_metrics(metric_rows, per_query_latency_ms, recall_values, args.top_k)
+    aggregate[f"answer_support@{args.top_k}"] = float(np.mean(answer_support_values))
     if use_bertscore:
         from metrics import bertscore
 
@@ -273,6 +355,8 @@ def main() -> None:
     results_dir = Path(args.results_dir)
     results_dir.mkdir(parents=True, exist_ok=True)
     out_path = results_dir / f"results_{eval_path.stem}_{args.mode}_{datetime.now():%Y%m%d_%H%M%S}.json"
+    resolved_generator_model = getattr(pipeline.generator, "generator_model", args.generator_model)
+    resolved_retriever_model = getattr(pipeline.retriever, "embedding_model", None)
     payload = {
         "config": {
             "eval_path": str(eval_path),
@@ -283,9 +367,22 @@ def main() -> None:
             "index_dir": str(index_dir),
             "top_k": args.top_k,
             "max_new_tokens": args.max_new_tokens,
-            "generator_model": args.generator_model,
+            "generator_model": resolved_generator_model,
+            "retriever_model": resolved_retriever_model,
+            "generation_kwargs": example_rows[0]["generation_diagnostics"].get("generation_kwargs", {}) if example_rows else {},
+            "warmup_enabled": args.warmup,
+            "quality_gate_enabled": args.quality_gate,
             "index": asdict(index_config),
             "bertscore_enabled": use_bertscore,
+            "versions": {
+                "python": platform.python_version(),
+                "torch": torch.__version__,
+                "transformers": transformers.__version__,
+                "cuda_available": torch.cuda.is_available(),
+                "device": getattr(next(pipeline.generator.model.parameters()), "device", None).type,
+                "dtype": str(next(pipeline.generator.model.parameters()).dtype),
+                "git_revision": git_revision(),
+            },
         },
         "metrics": aggregate,
         "examples": example_rows,

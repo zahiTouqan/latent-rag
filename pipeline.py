@@ -58,10 +58,13 @@ class Result:
     answer: str
     retrieved_passage_ids: list[str]
     retrieved_source_doc_ids: list[str]
+    retrieved_texts: list[str]
+    retrieval_scores: list[float]
     retrieval_time_s: float
     generation_time_s: float
     total_time_s: float
     generated_tokens: int
+    generation_diagnostics: dict[str, int | float | bool | str | list]
 
 
 @dataclass
@@ -116,6 +119,43 @@ def _load_seq2seq_model(model_name: str, dtype: torch.dtype) -> torch.nn.Module:
 
         return T5Gemma2ForConditionalGeneration.from_pretrained(model_name, torch_dtype=dtype)
     return AutoModelForSeq2SeqLM.from_pretrained(model_name, torch_dtype=dtype)
+
+
+def _eos_token_ids(model: torch.nn.Module, tokenizer) -> list[int]:
+    eos_token_ids = getattr(model.generation_config, "eos_token_id", None) or getattr(tokenizer, "eos_token_id", None)
+    if eos_token_ids is None:
+        return []
+    if isinstance(eos_token_ids, int):
+        return [eos_token_ids]
+    return [int(token_id) for token_id in eos_token_ids if token_id is not None]
+
+
+def _bad_word_token_ids(tokenizer, tokens: list[str]) -> list[list[int]]:
+    bad_words: list[list[int]] = []
+    for token in tokens:
+        token_ids = tokenizer.encode(token, add_special_tokens=False)
+        if token_ids:
+            bad_words.append(token_ids)
+    return bad_words
+
+
+def _drop_none_values(kwargs: dict) -> dict:
+    return {key: value for key, value in kwargs.items() if value is not None}
+
+
+def _visible_special_token_count(text: str) -> int:
+    return text.count("<unused")
+
+
+def _max_repeated_ngram_count(text: str, n: int = 3) -> int:
+    words = text.split()
+    if len(words) < n:
+        return 0
+    counts: dict[tuple[str, ...], int] = {}
+    for idx in range(0, len(words) - n + 1):
+        gram = tuple(words[idx : idx + n])
+        counts[gram] = counts.get(gram, 0) + 1
+    return max(counts.values(), default=0)
 
 
 class BGERTRetriever:
@@ -213,17 +253,18 @@ class BGERTRetriever:
             )
         return config
 
-    def retrieve(self, query: str, top_k: int) -> tuple[list[Passage], None, float]:
+    def retrieve(self, query: str, top_k: int) -> tuple[list[Passage], None, float, list[float]]:
         if self.index is None:
             raise ValueError("Retriever index is not loaded.")
         if top_k <= 0:
             raise ValueError("top_k must be positive.")
         t0 = time.perf_counter()
         query_embedding = self._embed([query], is_query=True)
-        _, indices = self.index.search(query_embedding, min(top_k, len(self.passages)))
+        scores, indices = self.index.search(query_embedding, min(top_k, len(self.passages)))
         elapsed = time.perf_counter() - t0
         passages = [self.passages[idx] for idx in indices[0] if idx != -1]
-        return passages, None, elapsed
+        score_list = [float(score) for idx, score in zip(indices[0], scores[0]) if idx != -1]
+        return passages, None, elapsed, score_list
 
 
 class LatentRetriever:
@@ -236,12 +277,13 @@ class LatentRetriever:
         self.model = _load_to_device(full_model.get_encoder(), "latent encoder").eval()
         self.passages: list[Passage] = []
         self.all_latents: dict[str, torch.Tensor] = {}
+        self.all_generation_latents: dict[str, torch.Tensor] = {}
         self.raw_latents_cpu: list[torch.Tensor] = []
+        self.generation_latents_cpu: list[torch.Tensor] = []
 
     @torch.no_grad()
-    def _embed(self, texts: list[str], is_query: bool = False) -> list[torch.Tensor]:
+    def _embed(self, texts: list[str], prefix: str = "") -> list[torch.Tensor]:
         device = next(self.model.parameters()).device
-        prefix = "Query: " if is_query else "Document: "
         encoded = self.tokenizer(
             [prefix + text for text in texts],
             padding=True,
@@ -271,6 +313,7 @@ class LatentRetriever:
         print(f"Embedding {len(passages)} passages ({n_batches} batches)...")
 
         self.all_latents = {}
+        self.all_generation_latents = {}
         shard_idx = 0
         shard_size = 2000
         output_dir = Path(index_dir) if index_dir is not None else None
@@ -279,13 +322,22 @@ class LatentRetriever:
 
         for i, start in enumerate(range(0, len(passages), batch_size)):
             batch = passages[start : start + batch_size]
-            latents_batch = self._embed([passage.text for passage in batch], is_query=False)
-            for passage, latents in zip(batch, latents_batch):
-                self.all_latents[passage.passage_id] = latents
+            texts = [passage.text for passage in batch]
+            retrieval_latents_batch = self._embed(texts, prefix="Document: ")
+            generation_latents_batch = self._embed(texts)
+            for passage, retrieval_latents, generation_latents in zip(
+                batch,
+                retrieval_latents_batch,
+                generation_latents_batch,
+            ):
+                self.all_latents[passage.passage_id] = retrieval_latents
+                self.all_generation_latents[passage.passage_id] = generation_latents
 
             if output_dir is not None and len(self.all_latents) >= shard_size:
-                save_file(self.all_latents, str(output_dir / f"latents_{shard_idx}.safetensors"))
+                save_file(self.all_latents, str(output_dir / f"retrieval_latents_{shard_idx}.safetensors"))
+                save_file(self.all_generation_latents, str(output_dir / f"generation_latents_{shard_idx}.safetensors"))
                 self.all_latents.clear()
+                self.all_generation_latents.clear()
                 shard_idx += 1
                 gc.collect()
 
@@ -293,8 +345,10 @@ class LatentRetriever:
                 print(f"  batch {i + 1}/{n_batches}")
 
         if output_dir is not None and self.all_latents:
-            save_file(self.all_latents, str(output_dir / f"latents_{shard_idx}.safetensors"))
+            save_file(self.all_latents, str(output_dir / f"retrieval_latents_{shard_idx}.safetensors"))
+            save_file(self.all_generation_latents, str(output_dir / f"generation_latents_{shard_idx}.safetensors"))
             self.all_latents.clear()
+            self.all_generation_latents.clear()
             gc.collect()
 
     def save(
@@ -313,8 +367,10 @@ class LatentRetriever:
 
         if self.all_latents:
             print("Saving latent sequences to safetensors...")
-            save_file(self.all_latents, str(index_dir / "latents_0.safetensors"))
+            save_file(self.all_latents, str(index_dir / "retrieval_latents_0.safetensors"))
+            save_file(self.all_generation_latents, str(index_dir / "generation_latents_0.safetensors"))
             self.all_latents.clear()
+            self.all_generation_latents.clear()
             gc.collect()
 
         config = IndexConfig(
@@ -342,12 +398,19 @@ class LatentRetriever:
                 self.passages.append(Passage(**record))
 
         config = load_index_config(index_dir)
-        print("Loading sequence latents into RAM for exhaustive MaxSim search...")
-        shard_files = sorted(index_dir.glob("latents_*.safetensors"))
+        print("Loading retrieval latents into RAM for exhaustive MaxSim search...")
+        shard_files = sorted(index_dir.glob("retrieval_latents_*.safetensors"))
+        legacy_latents = False
+        if not shard_files:
+            legacy_shards = sorted(index_dir.glob("latents_*.safetensors"))
+            if legacy_shards:
+                shard_files = legacy_shards
+                legacy_latents = True
         if not shard_files:
             legacy_file = index_dir / "latents.safetensors"
             if legacy_file.exists():
                 shard_files = [legacy_file]
+                legacy_latents = True
             else:
                 raise FileNotFoundError(f"Safetensors latents not found in {index_dir}")
 
@@ -361,14 +424,32 @@ class LatentRetriever:
         for passage in self.passages:
             self.raw_latents_cpu.append(latents_by_id[passage.passage_id])
 
+        self.generation_latents_cpu = []
+        generation_shard_files = sorted(index_dir.glob("generation_latents_*.safetensors"))
+        if generation_shard_files:
+            generation_latents_by_id: dict[str, torch.Tensor] = {}
+            for shard_file in generation_shard_files:
+                with safe_open(str(shard_file), framework="pt", device="cpu") as handle:
+                    for key in handle.keys():
+                        generation_latents_by_id[key] = handle.get_tensor(key)
+            for passage in self.passages:
+                self.generation_latents_cpu.append(generation_latents_by_id[passage.passage_id])
+        elif legacy_latents:
+            print("Warning: legacy latent index has no raw generation latents. Latent generation will re-encode passages online.")
+
         if len(self.raw_latents_cpu) != len(self.passages):
             raise ValueError(
                 "Metadata size mismatch: "
                 f"latents file has {len(self.raw_latents_cpu)} rows but metadata has {len(self.passages)} passages."
             )
+        if self.generation_latents_cpu and len(self.generation_latents_cpu) != len(self.passages):
+            raise ValueError(
+                "Generation latents size mismatch: "
+                f"latents file has {len(self.generation_latents_cpu)} rows but metadata has {len(self.passages)} passages."
+            )
         return config
 
-    def retrieve(self, query: str, top_k: int) -> tuple[list[Passage], list[torch.Tensor], float]:
+    def retrieve(self, query: str, top_k: int) -> tuple[list[Passage], list[torch.Tensor] | None, float, list[float]]:
         if not self.passages or not self.raw_latents_cpu:
             raise ValueError("Retriever index is not loaded.")
         if top_k <= 0:
@@ -376,7 +457,7 @@ class LatentRetriever:
 
         t0 = time.perf_counter()
         device = next(self.model.parameters()).device
-        query_latents = self._embed([query], is_query=True)[0].to(device).float()
+        query_latents = self._embed([query], prefix="Query: ")[0].to(device).float()
         q_norm = F.normalize(query_latents, p=2, dim=-1)
 
         chunk_size = 1000
@@ -397,9 +478,13 @@ class LatentRetriever:
         _, top_indices = torch.topk(scores, min(top_k, len(self.passages)))
         top_indices_list = top_indices.tolist()
         passages = [self.passages[idx] for idx in top_indices_list]
-        latents_list = [self.raw_latents_cpu[idx].to(device) for idx in top_indices_list]
+        if self.generation_latents_cpu:
+            latents_list = [self.generation_latents_cpu[idx].to(device) for idx in top_indices_list]
+        else:
+            latents_list = None
+        score_list = [float(scores[idx].item()) for idx in top_indices_list]
         elapsed = time.perf_counter() - t0
-        return passages, latents_list, elapsed
+        return passages, latents_list, elapsed, score_list
 
 
 class TextGenerator:
@@ -480,24 +565,13 @@ class TextGenerator:
             if self.processor is None:
                 raise RuntimeError("Image-text generator was not initialized with a processor.")
             messages = self._render_messages(query, passages)
-            try:
-                inputs = self.processor.apply_chat_template(
-                    messages,
-                    tokenize=True,
-                    return_dict=True,
-                    return_tensors="pt",
-                    add_generation_prompt=True,
-                    truncation=True,
-                    max_length=4096,
-                ).to(device)
-            except TypeError:
-                inputs = self.processor.apply_chat_template(
-                    messages,
-                    tokenize=True,
-                    return_dict=True,
-                    return_tensors="pt",
-                    add_generation_prompt=True,
-                ).to(device)
+            inputs = self.processor.apply_chat_template(
+                messages,
+                tokenize=True,
+                return_dict=True,
+                return_tensors="pt",
+                add_generation_prompt=True,
+            ).to(device)
         else:
             prompt = self._render_prompt(query, passages)
             inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=4096).to(device)
@@ -520,14 +594,74 @@ class TextGenerator:
             generation_kwargs.update({"do_sample": False, "repetition_penalty": 1.3})
 
         t0 = time.perf_counter()
+        generation_kwargs = _drop_none_values(generation_kwargs)
         output_ids = self.model.generate(**inputs, **generation_kwargs)
         generation_time = time.perf_counter() - t0
         new_tokens = output_ids[0, prompt_tokens:]
         decoder = self.processor if self.is_image_text_to_text and self.processor is not None else self.tokenizer
         answer = decoder.decode(new_tokens, skip_special_tokens=True).strip()
+        eos_ids = _eos_token_ids(self.model, self.tokenizer)
         stats = {
             "generated_tokens": int(new_tokens.shape[-1]),
             "generation_time_s": generation_time,
+            "ended_with_eos": bool(eos_ids and int(new_tokens[-1].item()) in eos_ids) if new_tokens.numel() else False,
+            "visible_special_tokens": _visible_special_token_count(answer),
+            "max_repeated_3gram": _max_repeated_ngram_count(answer),
+            "generation_kwargs": generation_kwargs,
+        }
+        return answer, stats
+
+
+class Seq2SeqTextGenerator:
+    def __init__(
+        self,
+        generator_model: str = DEFAULT_LATENT_GENERATOR,
+        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
+    ):
+        self.generator_model = generator_model
+        self.max_new_tokens = max_new_tokens
+        print(f"Loading seq2seq text generator model: {generator_model}")
+        self.tokenizer = AutoTokenizer.from_pretrained(generator_model)
+        self.model = _load_to_device(
+            _load_seq2seq_model(generator_model, dtype=_generator_dtype()),
+            "seq2seq text generator",
+        ).eval()
+
+    def _render_prompt(self, query: str, passages: list[Passage]) -> str:
+        context_blocks = [f"[{idx}] {p.text.strip()}" for idx, p in enumerate(passages, start=1)]
+        context = "\n\n".join(context_blocks)
+        return f"{PROMPT_PREFIX}{context}{PROMPT_SUFFIX_TEMPLATE.format(question=query)}"
+
+    @torch.no_grad()
+    def generate(
+        self,
+        query: str,
+        passages: list[Passage],
+        passage_latents: list[torch.Tensor] | None = None,
+    ) -> tuple[str, dict]:
+        prompt = self._render_prompt(query, passages)
+        device = next(self.model.parameters()).device
+        inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=4096).to(device)
+        generation_kwargs = {
+            "max_new_tokens": self.max_new_tokens,
+            "do_sample": False,
+            "eos_token_id": _eos_token_ids(self.model, self.tokenizer) or None,
+            "pad_token_id": self.tokenizer.pad_token_id,
+        }
+        t0 = time.perf_counter()
+        generation_kwargs = _drop_none_values(generation_kwargs)
+        output_ids = self.model.generate(**inputs, **generation_kwargs)
+        generation_time = time.perf_counter() - t0
+        new_tokens = output_ids[0, 1:] if output_ids.shape[-1] > 1 else output_ids[0]
+        answer = self.tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+        eos_ids = _eos_token_ids(self.model, self.tokenizer)
+        stats = {
+            "generated_tokens": int(new_tokens.shape[-1]),
+            "generation_time_s": generation_time,
+            "ended_with_eos": bool(eos_ids and int(new_tokens[-1].item()) in eos_ids) if new_tokens.numel() else False,
+            "visible_special_tokens": _visible_special_token_count(answer),
+            "max_repeated_3gram": _max_repeated_ngram_count(answer),
+            "generation_kwargs": generation_kwargs,
         }
         return answer, stats
 
@@ -546,6 +680,7 @@ class LatentGenerator:
             _load_seq2seq_model(generator_model, dtype=_generator_dtype()),
             "latent generator",
         ).eval()
+        self.bad_words_ids = _bad_word_token_ids(self.tokenizer, ["<unused6236>", "<unused6237>"])
 
     def _encode_passage(self, passage: Passage) -> torch.Tensor:
         device = next(self.model.parameters()).device
@@ -586,28 +721,32 @@ class LatentGenerator:
             or self.tokenizer.pad_token_id
         )
         decoder_input_ids = torch.tensor([[start_token_id]], device=device)
+        generation_kwargs = {
+            "encoder_outputs": encoder_outputs_obj,
+            "decoder_input_ids": decoder_input_ids,
+            "max_new_tokens": self.max_new_tokens,
+            "do_sample": False,
+            "eos_token_id": _eos_token_ids(self.model, self.tokenizer) or None,
+            "pad_token_id": self.tokenizer.pad_token_id,
+            "bad_words_ids": self.bad_words_ids or None,
+            "no_repeat_ngram_size": 3,
+            "repetition_penalty": 1.1,
+        }
 
         t0 = time.perf_counter()
-        generated_tokens = 0
-        for _ in range(self.max_new_tokens):
-            outputs = self.model(
-                encoder_outputs=encoder_outputs_obj,
-                decoder_input_ids=decoder_input_ids,
-            )
-            next_token = torch.argmax(outputs.logits[:, -1, :], dim=-1).unsqueeze(-1)
-            decoder_input_ids = torch.cat([decoder_input_ids, next_token], dim=-1)
-            generated_tokens += 1
-            eos_token_ids = self.model.generation_config.eos_token_id or self.tokenizer.eos_token_id
-            if isinstance(eos_token_ids, int):
-                eos_token_ids = [eos_token_ids]
-            if eos_token_ids and next_token.item() in eos_token_ids:
-                break
-
+        generation_kwargs = _drop_none_values(generation_kwargs)
+        output_ids = self.model.generate(**generation_kwargs)
         generation_time = time.perf_counter() - t0
-        answer = self.tokenizer.decode(decoder_input_ids[0, 1:], skip_special_tokens=True).strip()
+        new_tokens = output_ids[0, 1:] if output_ids.shape[-1] > 1 else output_ids[0]
+        answer = self.tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+        eos_ids = _eos_token_ids(self.model, self.tokenizer)
         stats = {
-            "generated_tokens": generated_tokens,
+            "generated_tokens": int(new_tokens.shape[-1]),
             "generation_time_s": generation_time,
+            "ended_with_eos": bool(eos_ids and int(new_tokens[-1].item()) in eos_ids) if new_tokens.numel() else False,
+            "visible_special_tokens": _visible_special_token_count(answer),
+            "max_repeated_3gram": _max_repeated_ngram_count(answer),
+            "generation_kwargs": generation_kwargs | {"encoder_outputs": "BaseModelOutput", "decoder_input_ids": "tensor"},
         }
         return answer, stats
 
@@ -616,7 +755,7 @@ class RAGPipeline:
     def __init__(
         self,
         retriever: BGERTRetriever | LatentRetriever,
-        generator: TextGenerator | LatentGenerator,
+        generator: TextGenerator | Seq2SeqTextGenerator | LatentGenerator,
         top_k: int = DEFAULT_TOP_K,
         seed: int = SEED,
     ):
@@ -627,15 +766,22 @@ class RAGPipeline:
 
     def run(self, query: str) -> Result:
         t0 = time.perf_counter()
-        passages, passage_latents, retrieval_time = self.retriever.retrieve(query, self.top_k)
+        passages, passage_latents, retrieval_time, retrieval_scores = self.retriever.retrieve(query, self.top_k)
         answer, stats = self.generator.generate(query, passages, passage_latents)
         return Result(
             query=query,
             answer=answer,
             retrieved_passage_ids=[p.passage_id for p in passages],
             retrieved_source_doc_ids=[p.source_doc_id for p in passages],
+            retrieved_texts=[p.text for p in passages],
+            retrieval_scores=retrieval_scores,
             retrieval_time_s=retrieval_time,
             generation_time_s=stats["generation_time_s"],
             total_time_s=time.perf_counter() - t0,
             generated_tokens=stats["generated_tokens"],
+            generation_diagnostics={
+                key: value
+                for key, value in stats.items()
+                if key not in {"generation_time_s", "generated_tokens"}
+            },
         )
