@@ -131,10 +131,10 @@ def build_pipeline(
     index_config = load_index_config(index_dir)
 
     if mode.startswith("bge"):
-        retriever = BGERTRetriever()
+        retriever = BGERTRetriever(embedding_model=index_config.embedding_model)
         retriever.load(index_dir)
     elif mode.startswith("t5"):
-        retriever = LatentRetriever()
+        retriever = LatentRetriever(embedding_model=index_config.embedding_model)
         retriever.load(index_dir)
     else:
         raise ValueError(f"Unknown mode: {mode}")
@@ -143,7 +143,12 @@ def build_pipeline(
         gen_model = generator_model or DEFAULT_TEXT_GENERATOR
         generator = TextGenerator(generator_model=gen_model, max_new_tokens=max_new_tokens)
     elif mode.endswith("+latent"):
-        gen_model = generator_model or DEFAULT_LATENT_GENERATOR
+        gen_model = generator_model or (index_config.embedding_model if mode == "t5+latent" else DEFAULT_LATENT_GENERATOR)
+        if mode == "t5+latent" and gen_model != index_config.embedding_model:
+            raise ValueError(
+                "t5+latent generation requires the generator model to match the latent index embedding model. "
+                f"Index was built with {index_config.embedding_model}, but generator_model is {gen_model}."
+            )
         generator = LatentGenerator(generator_model=gen_model, max_new_tokens=max_new_tokens)
     else:
         raise ValueError(f"Unknown mode: {mode}")

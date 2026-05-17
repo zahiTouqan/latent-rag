@@ -5,8 +5,8 @@ Minimal traditional RAG baseline for local corpora and local QA datasets.
 ## What this repo does
 
 - Loads a passage corpus from JSONL
-- Builds a dense FAISS index once and saves it to disk
-- Retrieves top-k passages with BGE embeddings
+- Builds a dense FAISS index for BGE retrieval or stored token latents for latent retrieval
+- Retrieves top-k passages with either BGE embeddings or latent MaxSim search
 - Generates answers with a causal language model
 - Evaluates on a local JSONL QA file
 - Reports answer quality, optional retrieval recall, and per-query latency
@@ -14,7 +14,7 @@ Minimal traditional RAG baseline for local corpora and local QA datasets.
 
 Core files:
 
-- `build_index.py`: load a passage corpus, embed it, and write a persisted FAISS index
+- `build_index.py`: load a passage corpus, embed it, and write either a persisted FAISS index or safetensors latent shards
 - `pipeline.py`: retrieval, prompt construction, generation, and runtime pipeline
 - `evaluate.py`: local dataset loading, evaluation loop, and result saving
 - `metrics.py`: retrieval and generation metrics helpers
@@ -103,6 +103,10 @@ The index directory will contain:
 - `index.faiss`
 - `metadata.jsonl`
 - `config.json`
+
+For `--retriever_type latent`, the index directory contains `latents_*.safetensors`,
+`metadata.jsonl`, and `config.json`. Latent retrieval uses exhaustive MaxSim over
+stored token-level encoder states rather than FAISS vectors.
 
 ## Evaluate
 

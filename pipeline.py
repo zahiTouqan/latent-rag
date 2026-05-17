@@ -27,13 +27,13 @@ import torch
 import torch.nn.functional as F
 from safetensors import safe_open
 from safetensors.torch import save_file
-from transformers import AutoModel, AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoConfig, AutoModel, AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer
 from transformers.modeling_outputs import BaseModelOutput
 
 DEFAULT_BGE_MODEL = "BAAI/bge-base-en-v1.5"
-DEFAULT_LATENT_MODEL = "google/t5gemma-2b-2b-ul2"
+DEFAULT_LATENT_MODEL = "google/t5gemma-2-270m-270m"
 DEFAULT_TEXT_GENERATOR = "Qwen/Qwen3.5-0.8B"
-DEFAULT_LATENT_GENERATOR = "google/t5gemma-2b-2b-ul2"
+DEFAULT_LATENT_GENERATOR = DEFAULT_LATENT_MODEL
 DEFAULT_EMBEDDING_MODEL = DEFAULT_LATENT_MODEL
 DEFAULT_GENERATOR_MODEL = DEFAULT_LATENT_GENERATOR
 DEFAULT_TOP_K = 5
@@ -107,6 +107,15 @@ def _load_to_device(model: torch.nn.Module, label: str) -> torch.nn.Module:
         torch.cuda.empty_cache()
         print(f"Warning: GPU OOM when loading {label}. Falling back to CPU.")
         return model.to("cpu")
+
+
+def _load_seq2seq_model(model_name: str, dtype: torch.dtype) -> torch.nn.Module:
+    config = AutoConfig.from_pretrained(model_name)
+    if getattr(config, "model_type", None) == "t5gemma2":
+        from transformers import T5Gemma2ForConditionalGeneration
+
+        return T5Gemma2ForConditionalGeneration.from_pretrained(model_name, torch_dtype=dtype)
+    return AutoModelForSeq2SeqLM.from_pretrained(model_name, torch_dtype=dtype)
 
 
 class BGERTRetriever:
@@ -223,7 +232,7 @@ class LatentRetriever:
         print(f"Loading latent embedding model (encoder only): {embedding_model}")
         self.tokenizer = AutoTokenizer.from_pretrained(embedding_model)
         dtype = _generator_dtype() if DEVICE == "cuda" else torch.float32
-        full_model = AutoModelForSeq2SeqLM.from_pretrained(embedding_model, torch_dtype=dtype)
+        full_model = _load_seq2seq_model(embedding_model, dtype=dtype)
         self.model = _load_to_device(full_model.get_encoder(), "latent encoder").eval()
         self.passages: list[Passage] = []
         self.all_latents: dict[str, torch.Tensor] = {}
@@ -402,16 +411,36 @@ class TextGenerator:
         self.generator_model = generator_model
         self.max_new_tokens = max_new_tokens
         print(f"Loading text generator model: {generator_model}")
-        self.tokenizer = AutoTokenizer.from_pretrained(generator_model)
-        if self.tokenizer.pad_token is None:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.model = _load_to_device(
-            AutoModelForCausalLM.from_pretrained(
-                generator_model,
-                torch_dtype=_generator_dtype(),
-            ),
-            "text generator",
-        ).eval()
+        self.is_image_text_to_text = False
+        config = AutoConfig.from_pretrained(generator_model)
+        self.model_type = getattr(config, "model_type", None)
+        if self.model_type == "qwen3_5":
+            from transformers import AutoModelForImageTextToText, AutoProcessor
+
+            self.is_image_text_to_text = True
+            self.processor = AutoProcessor.from_pretrained(generator_model)
+            self.tokenizer = self.processor.tokenizer
+            if self.tokenizer.pad_token is None:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+            self.model = _load_to_device(
+                AutoModelForImageTextToText.from_pretrained(
+                    generator_model,
+                    torch_dtype=_generator_dtype(),
+                ),
+                "text generator",
+            ).eval()
+        else:
+            self.processor = None
+            self.tokenizer = AutoTokenizer.from_pretrained(generator_model)
+            if self.tokenizer.pad_token is None:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+            self.model = _load_to_device(
+                AutoModelForCausalLM.from_pretrained(
+                    generator_model,
+                    torch_dtype=_generator_dtype(),
+                ),
+                "text generator",
+            ).eval()
 
     def _render_prompt(self, query: str, passages: list[Passage]) -> str:
         context_blocks = [f"[{idx}] {p.text.strip()}" for idx, p in enumerate(passages, start=1)]
@@ -422,9 +451,22 @@ class TextGenerator:
             f"Short answer (1-5 words):"
         )
         if hasattr(self.tokenizer, "chat_template") and self.tokenizer.chat_template is not None:
-            messages = [{"role": "user", "content": user_content}]
+            if self.is_image_text_to_text:
+                messages = [{"role": "user", "content": [{"type": "text", "text": user_content}]}]
+            else:
+                messages = [{"role": "user", "content": user_content}]
             return self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         return f"{PROMPT_PREFIX}{context}{PROMPT_SUFFIX_TEMPLATE.format(question=query)}"
+
+    def _render_messages(self, query: str, passages: list[Passage]) -> list[dict]:
+        context_blocks = [f"[{idx}] {p.text.strip()}" for idx, p in enumerate(passages, start=1)]
+        context = "\n\n".join(context_blocks)
+        user_content = (
+            f"Context:\n{context}\n\n"
+            f"Question: {query}\n\n"
+            f"Short answer (1-5 words):"
+        )
+        return [{"role": "user", "content": [{"type": "text", "text": user_content}]}]
 
     @torch.no_grad()
     def generate(
@@ -433,21 +475,56 @@ class TextGenerator:
         passages: list[Passage],
         passage_latents: list[torch.Tensor] | None = None,
     ) -> tuple[str, dict]:
-        prompt = self._render_prompt(query, passages)
         device = next(self.model.parameters()).device
-        inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=4096).to(device)
+        if self.is_image_text_to_text:
+            if self.processor is None:
+                raise RuntimeError("Image-text generator was not initialized with a processor.")
+            messages = self._render_messages(query, passages)
+            try:
+                inputs = self.processor.apply_chat_template(
+                    messages,
+                    tokenize=True,
+                    return_dict=True,
+                    return_tensors="pt",
+                    add_generation_prompt=True,
+                    truncation=True,
+                    max_length=4096,
+                ).to(device)
+            except TypeError:
+                inputs = self.processor.apply_chat_template(
+                    messages,
+                    tokenize=True,
+                    return_dict=True,
+                    return_tensors="pt",
+                    add_generation_prompt=True,
+                ).to(device)
+        else:
+            prompt = self._render_prompt(query, passages)
+            inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=4096).to(device)
         prompt_tokens = inputs["input_ids"].shape[-1]
+        generation_kwargs = {
+            "max_new_tokens": self.max_new_tokens,
+            "pad_token_id": self.tokenizer.pad_token_id,
+        }
+        if self.model_type == "qwen3_5":
+            generation_kwargs.update(
+                {
+                    "do_sample": True,
+                    "temperature": 1.0,
+                    "top_p": 1.0,
+                    "top_k": 20,
+                    "repetition_penalty": 1.0,
+                }
+            )
+        else:
+            generation_kwargs.update({"do_sample": False, "repetition_penalty": 1.3})
+
         t0 = time.perf_counter()
-        output_ids = self.model.generate(
-            **inputs,
-            max_new_tokens=self.max_new_tokens,
-            do_sample=False,
-            pad_token_id=self.tokenizer.pad_token_id,
-            repetition_penalty=1.3,
-        )
+        output_ids = self.model.generate(**inputs, **generation_kwargs)
         generation_time = time.perf_counter() - t0
         new_tokens = output_ids[0, prompt_tokens:]
-        answer = self.tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+        decoder = self.processor if self.is_image_text_to_text and self.processor is not None else self.tokenizer
+        answer = decoder.decode(new_tokens, skip_special_tokens=True).strip()
         stats = {
             "generated_tokens": int(new_tokens.shape[-1]),
             "generation_time_s": generation_time,
@@ -466,10 +543,7 @@ class LatentGenerator:
         print(f"Loading latent generator model (Seq2Seq): {generator_model}")
         self.tokenizer = AutoTokenizer.from_pretrained(generator_model)
         self.model = _load_to_device(
-            AutoModelForSeq2SeqLM.from_pretrained(
-                generator_model,
-                torch_dtype=_generator_dtype(),
-            ),
+            _load_seq2seq_model(generator_model, dtype=_generator_dtype()),
             "latent generator",
         ).eval()
 
@@ -523,7 +597,10 @@ class LatentGenerator:
             next_token = torch.argmax(outputs.logits[:, -1, :], dim=-1).unsqueeze(-1)
             decoder_input_ids = torch.cat([decoder_input_ids, next_token], dim=-1)
             generated_tokens += 1
-            if next_token.item() == self.tokenizer.eos_token_id:
+            eos_token_ids = self.model.generation_config.eos_token_id or self.tokenizer.eos_token_id
+            if isinstance(eos_token_ids, int):
+                eos_token_ids = [eos_token_ids]
+            if eos_token_ids and next_token.item() in eos_token_ids:
                 break
 
         generation_time = time.perf_counter() - t0
