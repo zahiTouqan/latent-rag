@@ -22,8 +22,8 @@ from transformers.modeling_outputs import BaseModelOutput
 from safetensors import safe_open
 from safetensors.torch import save_file
 
-DEFAULT_EMBEDDING_MODEL = "google/t5gemma-2b-2b-ul2"
-DEFAULT_GENERATOR_MODEL = "google/t5gemma-2b-2b-ul2"
+DEFAULT_EMBEDDING_MODEL = "google/flan-t5-large"
+DEFAULT_GENERATOR_MODEL = "google/flan-t5-large"
 DEFAULT_TOP_K = 5
 DEFAULT_MAX_NEW_TOKENS = 128
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -42,6 +42,9 @@ class Result:
     answer: str
     retrieved_passage_ids: list[str]
     retrieved_source_doc_ids: list[str]
+    retrieved_texts: list[str]
+    retrieval_scores: list[float]
+    generation_diagnostics: dict
     retrieval_time_s: float
     generation_time_s: float
     total_time_s: float
@@ -128,15 +131,13 @@ class Retriever:
 
         saved_latents = []
         for i in range(len(texts)):
-            # Robustly extract only valid text tokens using the boolean mask
-            # CLONE AND CONTIGUOUS: Prevents PyTorch from keeping the massive batch padding
-            # in memory, and prevents Safetensors from crashing during save.
-            true_latents = latents[i][attention_mask[i]].clone().contiguous()
+            # Robustly extract only valid text tokens using the boolean mask (fixes left-padding bugs)
+            true_latents = latents[i][attention_mask[i]]
             saved_latents.append(true_latents)
 
         return saved_latents
 
-    def build_index(self, passages: list[Passage], batch_size: int = 256, index_dir: str | Path | None = None) -> None:
+    def build_index(self, passages: list[Passage], batch_size: int = 256) -> None:
         if not passages:
             raise ValueError("Cannot build an index with zero passages.")
 
@@ -146,13 +147,6 @@ class Retriever:
         
         self.all_latents = {}
         
-        if index_dir:
-            index_dir = Path(index_dir)
-            index_dir.mkdir(parents=True, exist_ok=True)
-            
-        shard_idx = 0
-        SHARD_SIZE = 2000
-        
         for i, start in enumerate(range(0, len(passages), batch_size)):
             batch = passages[start : start + batch_size]
             latents_batch = self._embed([passage.text for passage in batch], is_query=False)
@@ -160,22 +154,8 @@ class Retriever:
             for p, lat in zip(batch, latents_batch):
                 self.all_latents[p.passage_id] = lat
                 
-            if index_dir and len(self.all_latents) >= SHARD_SIZE:
-                save_file(self.all_latents, str(index_dir / f"latents_{shard_idx}.safetensors"))
-                self.all_latents.clear()
-                shard_idx += 1
-                import gc
-                gc.collect()
-                
             if (i + 1) % 10 == 0 or i + 1 == n_batches:
                 print(f"  batch {i + 1}/{n_batches}")
-
-        # Save remaining latents if sharding is enabled
-        if index_dir and self.all_latents:
-            save_file(self.all_latents, str(index_dir / f"latents_{shard_idx}.safetensors"))
-            self.all_latents.clear()
-            import gc
-            gc.collect()
 
     def save(
         self,
@@ -192,19 +172,9 @@ class Retriever:
             for passage in self.passages:
                 handle.write(json.dumps(asdict(passage), ensure_ascii=True) + "\n")
 
-        import gc
-        import torch
-        
-        # Force garbage collection to clear up RAM before saving
-        gc.collect()
-        
-        # Save massive latents via safetensors directly
-        if self.all_latents:
-            print("Saving Latent Sequences to Safetensors...")
-            save_file(self.all_latents, str(index_dir / "latents_0.safetensors"))
-            # Clear out the dictionary immediately after saving to free RAM
-            self.all_latents.clear()
-            gc.collect()
+        # Save massive latents via safetensors
+        print("Saving Latent Sequences to Safetensors...")
+        save_file(self.all_latents, str(index_dir / "latents.safetensors"))
 
         config = IndexConfig(
             embedding_model=self.embedding_model,
@@ -220,9 +190,12 @@ class Retriever:
     def load(self, index_dir: str | Path) -> IndexConfig:
         index_dir = Path(index_dir)
         metadata_path = index_dir / "metadata.jsonl"
+        self.latent_file = str(index_dir / "latents.safetensors")
 
         if not metadata_path.exists():
             raise FileNotFoundError(f"Metadata file not found: {metadata_path}")
+        if not Path(self.latent_file).exists():
+            raise FileNotFoundError(f"Safetensors latents not found: {self.latent_file}")
 
         self.passages = []
         with metadata_path.open(encoding="utf-8") as handle:
@@ -235,25 +208,9 @@ class Retriever:
         # Pre-load all latents into CPU RAM for fast in-memory ColBERT batched search
         print("Loading sequence latents into RAM for exhaustive MaxSim search...")
         self.raw_latents_cpu = []
-        
-        # Find all shards
-        shard_files = sorted(list(index_dir.glob("latents_*.safetensors")))
-        if not shard_files:
-            # Backwards compatibility
-            old_file = index_dir / "latents.safetensors"
-            if old_file.exists():
-                shard_files = [old_file]
-            else:
-                raise FileNotFoundError(f"Safetensors latents not found in {index_dir}")
-                
-        latents_dict = {}
-        for shard_file in shard_files:
-            with safe_open(str(shard_file), framework="pt", device="cpu") as f:
-                for k in f.keys():
-                    latents_dict[k] = f.get_tensor(k)
-                    
-        for p in self.passages:
-            self.raw_latents_cpu.append(latents_dict[p.passage_id])
+        with safe_open(self.latent_file, framework="pt", device="cpu") as f:
+            for p in self.passages:
+                self.raw_latents_cpu.append(f.get_tensor(p.passage_id))
 
         if len(self.raw_latents_cpu) != len(self.passages):
             raise ValueError(
@@ -427,8 +384,11 @@ class RAGPipeline:
             answer=answer,
             retrieved_passage_ids=[p.passage_id for p in retrieved_passages],
             retrieved_source_doc_ids=[p.source_doc_id for p in retrieved_passages],
+            retrieved_texts=[p.text for p in retrieved_passages],
+            retrieval_scores=[],  # Placeholder if scores aren't available here
+            generation_diagnostics={},  # Placeholder
             retrieval_time_s=retrieval_time,
             generation_time_s=stats["generation_time_s"],
-            total_time_s=time.perf_counter() - t0,
+            total_time_s=retrieval_time + stats["generation_time_s"],
             generated_tokens=stats["generated_tokens"],
         )

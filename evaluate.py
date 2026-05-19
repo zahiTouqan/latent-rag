@@ -16,7 +16,7 @@ from typing import Any
 import numpy as np
 from tqdm import tqdm
 
-from metrics import exact_match, recall_at_k, token_f1
+from metrics import exact_match, recall_at_k, token_f1, normalise_answer
 from pipeline import (
     DEFAULT_GENERATOR_MODEL,
     DEFAULT_MAX_NEW_TOKENS,
@@ -27,6 +27,15 @@ from pipeline import (
 QUESTION_FIELD = "question"
 ANSWER_FIELD = "answer"
 RELEVANT_IDS_FIELD = "relevant_ids"
+
+
+def answer_present_in_context(contexts: list[str], answers: list[str]) -> float:
+    normalised_context = normalise_answer("\n".join(contexts))
+    for answer in answers:
+        answer_text = normalise_answer(answer)
+        if answer_text and answer_text in normalised_context:
+            return 1.0
+    return 0.0
 
 
 def _check_bertscore() -> bool:
@@ -171,12 +180,15 @@ def main() -> None:
     references: list[list[str]] = []
     per_query_latency_ms: list[float] = []
     recall_values: list[float] = []
+    answer_support_values: list[float] = []
 
     for sample in tqdm(samples):
         result = pipeline.run(sample["query"])
         per_query_latency_ms.append(result.total_time_s * 1000.0)
 
         retrieved_ids = result.retrieved_passage_ids if use_passage_ids else list(dict.fromkeys(result.retrieved_source_doc_ids))
+        answer_support_value = answer_present_in_context(result.retrieved_texts, sample["answers"])
+        answer_support_values.append(answer_support_value)
         metric_row = {
             "em": exact_match(result.answer, sample["answers"]),
             "f1": token_f1(result.answer, sample["answers"]),
@@ -199,6 +211,7 @@ def main() -> None:
                 "retrieved_ids": retrieved_ids,
                 "relevant_ids": sample["relevant_ids"],
                 "recall_at_k": recall_value,
+                f"answer_support@{args.top_k}": answer_support_value,
                 **metric_row,
             }
         )
@@ -207,6 +220,7 @@ def main() -> None:
         references.append(sample["answers"])
 
     aggregate = aggregate_metrics(metric_rows, per_query_latency_ms, recall_values, args.top_k)
+    aggregate[f"answer_support@{args.top_k}"] = float(np.mean(answer_support_values))
     if use_bertscore:
         from metrics import bertscore
 
