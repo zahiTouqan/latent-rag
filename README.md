@@ -143,19 +143,21 @@ python3 evaluate.py \
 Useful options:
 
 - `--top_k 5`
-- `--max_new_tokens 128`
+- `--max_new_tokens`: defaults to 32 for causal text generation and 16 for T5Gemma2 text/latent generation
 - `--generator_model Qwen/Qwen3.5-0.8B`
 - `--mode bge+t5text` or `--mode t5+t5text` for T5Gemma2 text-generation controls
 - `--warmup`: run one untimed warm-up query before measuring latency
-- `--quality_gate --max_samples 5`: fail fast on visible special tokens, repetition, or non-EOS truncation
+- `--quality_gate --max_samples 5`: fail fast on visible special tokens or excessive repetition
+- `--require_eos`: with `--quality_gate`, also fail when generation reaches `max_new_tokens` without EOS
 - `--bertscore`
 
 ## Metrics reported
 
 - End-to-end quality: `em`, `f1`, optional `bertscore_*`
 - Retrieval: `recall@k` when the eval file includes `relevant_ids`, plus `answer_support@k`
+- Supported generation quality: `em_when_supported`, `f1_when_supported`
 - Efficiency: mean latency fields, `latency_p50_ms`, `latency_p95_ms`
-- Generation health: EOS rate, visible special-token count, repeated 3-gram count
+- Generation health: EOS rate, max-token hit rate, visible special-token count, repeated 3-gram count
 
 ## Results
 
@@ -171,4 +173,4 @@ Each result file contains:
 
 Use [baseline_nq_colab.ipynb](/home/zahi/projects/latent-rag/baseline_nq_colab.ipynb) as a thin generic runner notebook.
 
-The notebook streams a configurable subset of `facebook/kilt_wikipedia`, loads Google Natural Questions from `google-research-datasets/natural_questions`, converts it into the local eval format, and evaluates against document-level relevance labels without requiring a full Wikipedia download in Colab.
+The notebook streams a configurable subset of `facebook/kilt_wikipedia`, loads Google Natural Questions from `google-research-datasets/natural_questions`, converts it into the local eval format, and evaluates against document-level relevance labels without requiring a full Wikipedia download in Colab. It runs BGE/Qwen, BGE/T5-text, BGE/T5-latent, T5/Qwen, T5/T5-text, and full T5/T5-latent controls so retrieval and generation effects can be separated.

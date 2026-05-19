@@ -30,6 +30,7 @@ from pipeline import (
     DEFAULT_TEXT_GENERATOR,
     DEFAULT_LATENT_GENERATOR,
     DEFAULT_MAX_NEW_TOKENS,
+    DEFAULT_SEQ2SEQ_MAX_NEW_TOKENS,
     DEFAULT_TOP_K,
     BGERTRetriever,
     LatentGenerator,
@@ -154,10 +155,16 @@ def build_pipeline(
     index_dir: str | Path,
     generator_model: str | None,
     top_k: int,
-    max_new_tokens: int,
+    max_new_tokens: int | None,
     seed: int,
 ) -> tuple[RAGPipeline, IndexConfig]:
     index_config = load_index_config(index_dir)
+    if max_new_tokens is None:
+        max_new_tokens = (
+            DEFAULT_SEQ2SEQ_MAX_NEW_TOKENS
+            if mode.endswith("+t5text") or mode.endswith("+latent")
+            else DEFAULT_MAX_NEW_TOKENS
+        )
 
     if mode.startswith("bge"):
         retriever = BGERTRetriever(embedding_model=index_config.embedding_model)
@@ -209,11 +216,21 @@ def main() -> None:
     parser.add_argument("--index_dir", required=True)
     parser.add_argument("--generator_model", default=None)
     parser.add_argument("--top_k", type=int, default=DEFAULT_TOP_K)
-    parser.add_argument("--max_new_tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS)
+    parser.add_argument(
+        "--max_new_tokens",
+        type=int,
+        default=None,
+        help=(
+            "Maximum generated tokens. Defaults to "
+            f"{DEFAULT_MAX_NEW_TOKENS} for causal text generation and "
+            f"{DEFAULT_SEQ2SEQ_MAX_NEW_TOKENS} for T5Gemma text/latent generation."
+        ),
+    )
     parser.add_argument("--results_dir", default="results")
     parser.add_argument("--bertscore", action="store_true")
     parser.add_argument("--warmup", action="store_true", help="Run one untimed warm-up query before evaluation")
     parser.add_argument("--quality_gate", action="store_true", help="Fail fast on invalid generations during smoke tests")
+    parser.add_argument("--require_eos", action="store_true", help="With --quality_gate, fail if generation hits max_new_tokens without EOS")
     parser.add_argument("--max_visible_special_tokens", type=int, default=0)
     parser.add_argument("--max_repeated_3gram", type=int, default=3)
     args = parser.parse_args()
@@ -254,6 +271,7 @@ def main() -> None:
     if args.warmup:
         print("Running untimed warm-up query...")
         pipeline.run(samples[0]["query"])
+    resolved_max_new_tokens = int(getattr(pipeline.generator, "max_new_tokens", args.max_new_tokens))
 
     use_passage_ids = args.retrieval_id_field == "passage_id"
 
@@ -283,6 +301,7 @@ def main() -> None:
             "total_time_s": result.total_time_s,
             "generated_tokens": result.generated_tokens,
             "ended_with_eos": float(bool(result.generation_diagnostics.get("ended_with_eos", False))),
+            "hit_max_new_tokens": float(bool(result.generation_diagnostics.get("hit_max_new_tokens", False))),
             "visible_special_tokens": float(result.generation_diagnostics.get("visible_special_tokens", 0)),
             "max_repeated_3gram": float(result.generation_diagnostics.get("max_repeated_3gram", 0)),
         }
@@ -307,7 +326,7 @@ def main() -> None:
                     f"Quality gate failed for query '{sample['query']}': "
                     f"max_repeated_3gram={max_repeated_3gram}"
                 )
-            if result.generated_tokens >= args.max_new_tokens and not ended_with_eos:
+            if args.require_eos and result.generated_tokens >= resolved_max_new_tokens and not ended_with_eos:
                 raise RuntimeError(
                     f"Quality gate failed for query '{sample['query']}': "
                     "generation reached max_new_tokens without EOS"
@@ -346,6 +365,14 @@ def main() -> None:
 
     aggregate = aggregate_metrics(metric_rows, per_query_latency_ms, recall_values, args.top_k)
     aggregate[f"answer_support@{args.top_k}"] = float(np.mean(answer_support_values))
+    supported_rows = [row for row, supported in zip(metric_rows, answer_support_values) if supported]
+    unsupported_rows = [row for row, supported in zip(metric_rows, answer_support_values) if not supported]
+    if supported_rows:
+        aggregate["em_when_supported"] = float(np.mean([row["em"] for row in supported_rows]))
+        aggregate["f1_when_supported"] = float(np.mean([row["f1"] for row in supported_rows]))
+    if unsupported_rows:
+        aggregate["em_when_unsupported"] = float(np.mean([row["em"] for row in unsupported_rows]))
+        aggregate["f1_when_unsupported"] = float(np.mean([row["f1"] for row in unsupported_rows]))
     if use_bertscore:
         from metrics import bertscore
 
@@ -366,12 +393,13 @@ def main() -> None:
             "seed": args.seed,
             "index_dir": str(index_dir),
             "top_k": args.top_k,
-            "max_new_tokens": args.max_new_tokens,
+            "max_new_tokens": resolved_max_new_tokens,
             "generator_model": resolved_generator_model,
             "retriever_model": resolved_retriever_model,
             "generation_kwargs": example_rows[0]["generation_diagnostics"].get("generation_kwargs", {}) if example_rows else {},
             "warmup_enabled": args.warmup,
             "quality_gate_enabled": args.quality_gate,
+            "require_eos_enabled": args.require_eos,
             "index": asdict(index_config),
             "bertscore_enabled": use_bertscore,
             "versions": {

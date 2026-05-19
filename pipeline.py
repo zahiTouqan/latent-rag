@@ -37,12 +37,16 @@ DEFAULT_LATENT_GENERATOR = DEFAULT_LATENT_MODEL
 DEFAULT_EMBEDDING_MODEL = DEFAULT_LATENT_MODEL
 DEFAULT_GENERATOR_MODEL = DEFAULT_LATENT_GENERATOR
 DEFAULT_TOP_K = 5
-DEFAULT_MAX_NEW_TOKENS = 128
+DEFAULT_MAX_NEW_TOKENS = 32
+DEFAULT_SEQ2SEQ_MAX_NEW_TOKENS = 16
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 SEED = 42
 
-PROMPT_PREFIX = "Context:\n"
-PROMPT_SUFFIX_TEMPLATE = "\n\nQuestion: {question}\n\nShort answer (1-5 words):"
+QA_INSTRUCTION = (
+    "Answer the question using only the context. "
+    "Return only the exact short answer. Do not explain."
+)
+SEQ2SEQ_TASK_PREFIX = "question answering:"
 
 
 @dataclass
@@ -141,6 +145,20 @@ def _bad_word_token_ids(tokenizer, tokens: list[str]) -> list[list[int]]:
 
 def _drop_none_values(kwargs: dict) -> dict:
     return {key: value for key, value in kwargs.items() if value is not None}
+
+
+def _format_context(passages: list["Passage"]) -> str:
+    return "\n\n".join(f"[{idx}] {p.text.strip()}" for idx, p in enumerate(passages, start=1))
+
+
+def _render_qa_prompt(query: str, passages: list["Passage"], task_prefix: str | None = None) -> str:
+    prefix = f"{task_prefix.strip()} " if task_prefix else ""
+    return (
+        f"{prefix}{QA_INSTRUCTION}\n\n"
+        f"Context:\n{_format_context(passages)}\n\n"
+        f"Question: {query}\n"
+        "Answer:"
+    )
 
 
 def _visible_special_token_count(text: str) -> int:
@@ -528,29 +546,17 @@ class TextGenerator:
             ).eval()
 
     def _render_prompt(self, query: str, passages: list[Passage]) -> str:
-        context_blocks = [f"[{idx}] {p.text.strip()}" for idx, p in enumerate(passages, start=1)]
-        context = "\n\n".join(context_blocks)
-        user_content = (
-            f"Context:\n{context}\n\n"
-            f"Question: {query}\n\n"
-            f"Short answer (1-5 words):"
-        )
+        user_content = _render_qa_prompt(query, passages)
         if hasattr(self.tokenizer, "chat_template") and self.tokenizer.chat_template is not None:
             if self.is_image_text_to_text:
                 messages = [{"role": "user", "content": [{"type": "text", "text": user_content}]}]
             else:
                 messages = [{"role": "user", "content": user_content}]
             return self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        return f"{PROMPT_PREFIX}{context}{PROMPT_SUFFIX_TEMPLATE.format(question=query)}"
+        return user_content
 
     def _render_messages(self, query: str, passages: list[Passage]) -> list[dict]:
-        context_blocks = [f"[{idx}] {p.text.strip()}" for idx, p in enumerate(passages, start=1)]
-        context = "\n\n".join(context_blocks)
-        user_content = (
-            f"Context:\n{context}\n\n"
-            f"Question: {query}\n\n"
-            f"Short answer (1-5 words):"
-        )
+        user_content = _render_qa_prompt(query, passages)
         return [{"role": "user", "content": [{"type": "text", "text": user_content}]}]
 
     @torch.no_grad()
@@ -579,14 +585,12 @@ class TextGenerator:
         generation_kwargs = {
             "max_new_tokens": self.max_new_tokens,
             "pad_token_id": self.tokenizer.pad_token_id,
+            "eos_token_id": _eos_token_ids(self.model, self.tokenizer) or None,
         }
         if self.model_type == "qwen3_5":
             generation_kwargs.update(
                 {
-                    "do_sample": True,
-                    "temperature": 1.0,
-                    "top_p": 1.0,
-                    "top_k": 20,
+                    "do_sample": False,
                     "repetition_penalty": 1.0,
                 }
             )
@@ -601,10 +605,12 @@ class TextGenerator:
         decoder = self.processor if self.is_image_text_to_text and self.processor is not None else self.tokenizer
         answer = decoder.decode(new_tokens, skip_special_tokens=True).strip()
         eos_ids = _eos_token_ids(self.model, self.tokenizer)
+        ended_with_eos = bool(eos_ids and int(new_tokens[-1].item()) in eos_ids) if new_tokens.numel() else False
         stats = {
             "generated_tokens": int(new_tokens.shape[-1]),
             "generation_time_s": generation_time,
-            "ended_with_eos": bool(eos_ids and int(new_tokens[-1].item()) in eos_ids) if new_tokens.numel() else False,
+            "ended_with_eos": ended_with_eos,
+            "hit_max_new_tokens": bool(new_tokens.shape[-1] >= self.max_new_tokens and not ended_with_eos),
             "visible_special_tokens": _visible_special_token_count(answer),
             "max_repeated_3gram": _max_repeated_ngram_count(answer),
             "generation_kwargs": generation_kwargs,
@@ -616,7 +622,7 @@ class Seq2SeqTextGenerator:
     def __init__(
         self,
         generator_model: str = DEFAULT_LATENT_GENERATOR,
-        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
+        max_new_tokens: int = DEFAULT_SEQ2SEQ_MAX_NEW_TOKENS,
     ):
         self.generator_model = generator_model
         self.max_new_tokens = max_new_tokens
@@ -628,9 +634,7 @@ class Seq2SeqTextGenerator:
         ).eval()
 
     def _render_prompt(self, query: str, passages: list[Passage]) -> str:
-        context_blocks = [f"[{idx}] {p.text.strip()}" for idx, p in enumerate(passages, start=1)]
-        context = "\n\n".join(context_blocks)
-        return f"{PROMPT_PREFIX}{context}{PROMPT_SUFFIX_TEMPLATE.format(question=query)}"
+        return _render_qa_prompt(query, passages, task_prefix=SEQ2SEQ_TASK_PREFIX)
 
     @torch.no_grad()
     def generate(
@@ -647,6 +651,8 @@ class Seq2SeqTextGenerator:
             "do_sample": False,
             "eos_token_id": _eos_token_ids(self.model, self.tokenizer) or None,
             "pad_token_id": self.tokenizer.pad_token_id,
+            "no_repeat_ngram_size": 3,
+            "repetition_penalty": 1.1,
         }
         t0 = time.perf_counter()
         generation_kwargs = _drop_none_values(generation_kwargs)
@@ -655,10 +661,12 @@ class Seq2SeqTextGenerator:
         new_tokens = output_ids[0, 1:] if output_ids.shape[-1] > 1 else output_ids[0]
         answer = self.tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
         eos_ids = _eos_token_ids(self.model, self.tokenizer)
+        ended_with_eos = bool(eos_ids and int(new_tokens[-1].item()) in eos_ids) if new_tokens.numel() else False
         stats = {
             "generated_tokens": int(new_tokens.shape[-1]),
             "generation_time_s": generation_time,
-            "ended_with_eos": bool(eos_ids and int(new_tokens[-1].item()) in eos_ids) if new_tokens.numel() else False,
+            "ended_with_eos": ended_with_eos,
+            "hit_max_new_tokens": bool(new_tokens.shape[-1] >= self.max_new_tokens and not ended_with_eos),
             "visible_special_tokens": _visible_special_token_count(answer),
             "max_repeated_3gram": _max_repeated_ngram_count(answer),
             "generation_kwargs": generation_kwargs,
@@ -670,7 +678,7 @@ class LatentGenerator:
     def __init__(
         self,
         generator_model: str = DEFAULT_LATENT_GENERATOR,
-        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
+        max_new_tokens: int = DEFAULT_SEQ2SEQ_MAX_NEW_TOKENS,
     ):
         self.generator_model = generator_model
         self.max_new_tokens = max_new_tokens
@@ -682,18 +690,21 @@ class LatentGenerator:
         ).eval()
         self.bad_words_ids = _bad_word_token_ids(self.tokenizer, ["<unused6236>", "<unused6237>"])
 
-    def _encode_passage(self, passage: Passage) -> torch.Tensor:
+    def _encode_text(self, text: str, max_length: int = 512) -> torch.Tensor:
         device = next(self.model.parameters()).device
         enc = self.tokenizer(
-            passage.text,
+            text,
             padding=False,
             truncation=True,
-            max_length=512,
+            max_length=max_length,
             return_tensors="pt",
         ).to(device)
         latents = self.model.get_encoder()(**enc).last_hidden_state[0]
         seq_len = enc["attention_mask"][0].sum().item()
         return latents[:seq_len, :]
+
+    def _encode_passage(self, passage: Passage) -> torch.Tensor:
+        return self._encode_text(passage.text)
 
     @torch.no_grad()
     def generate(
@@ -703,16 +714,17 @@ class LatentGenerator:
         passage_latents: list[torch.Tensor] | None = None,
     ) -> tuple[str, dict]:
         device = next(self.model.parameters()).device
-        q_enc = self.tokenizer(
-            f"Question: {query}\n\nShort answer:",
-            return_tensors="pt",
-            truncation=True,
+        q_latents = self._encode_text(
+            f"{SEQ2SEQ_TASK_PREFIX} {QA_INSTRUCTION}\n\nQuestion: {query}\nAnswer:",
             max_length=512,
-        ).to(device)
-        q_latents = self.model.get_encoder()(**q_enc).last_hidden_state[0]
+        )
         if passage_latents is None:
             passage_latents = [self._encode_passage(p) for p in passages]
-        combined_latents = torch.cat([q_latents] + passage_latents, dim=0).unsqueeze(0)
+        latent_blocks = [q_latents, self._encode_text("\n\nContext:\n", max_length=32)]
+        for idx, passage_latent in enumerate(passage_latents, start=1):
+            latent_blocks.append(self._encode_text(f"\n\nPassage {idx}:\n", max_length=32))
+            latent_blocks.append(passage_latent.to(device))
+        combined_latents = torch.cat(latent_blocks, dim=0).unsqueeze(0)
         encoder_outputs_obj = BaseModelOutput(last_hidden_state=combined_latents)
         start_token_id = (
             getattr(self.model.generation_config, "decoder_start_token_id", None)
@@ -740,10 +752,12 @@ class LatentGenerator:
         new_tokens = output_ids[0, 1:] if output_ids.shape[-1] > 1 else output_ids[0]
         answer = self.tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
         eos_ids = _eos_token_ids(self.model, self.tokenizer)
+        ended_with_eos = bool(eos_ids and int(new_tokens[-1].item()) in eos_ids) if new_tokens.numel() else False
         stats = {
             "generated_tokens": int(new_tokens.shape[-1]),
             "generation_time_s": generation_time,
-            "ended_with_eos": bool(eos_ids and int(new_tokens[-1].item()) in eos_ids) if new_tokens.numel() else False,
+            "ended_with_eos": ended_with_eos,
+            "hit_max_new_tokens": bool(new_tokens.shape[-1] >= self.max_new_tokens and not ended_with_eos),
             "visible_special_tokens": _visible_special_token_count(answer),
             "max_repeated_3gram": _max_repeated_ngram_count(answer),
             "generation_kwargs": generation_kwargs | {"encoder_outputs": "BaseModelOutput", "decoder_input_ids": "tensor"},

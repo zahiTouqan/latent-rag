@@ -9,7 +9,10 @@ COLUMNS = [
     "f1",
     "recall@5",
     "answer_support@5",
+    "em_when_supported",
+    "f1_when_supported",
     "visible_special_tokens",
+    "hit_max_new_tokens",
     "max_repeated_3gram",
     "latency_p50_ms",
     "latency_p95_ms",
@@ -30,7 +33,10 @@ def main() -> None:
             data = json.load(handle)
         mode = data.get("config", {}).get("mode", "N/A")
         metrics = data.get("metrics", {})
-        values = "".join(f"{float(metrics.get(column, 0.0)):>24.4f}" for column in COLUMNS)
+        values = ""
+        for column in COLUMNS:
+            value = metrics.get(column)
+            values += f"{float(value):>24.4f}" if value is not None else f"{'N/A':>24s}"
         print(f"{result_file.name:<42s} {mode:<12s}{values}")
 
 
