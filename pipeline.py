@@ -7,6 +7,7 @@ Offline:
 Online:
     query -> FAISS search -> fetch top-k safetensors matrix latents -> bypass encoder -> manual generation loop
 """
+
 from __future__ import annotations
 
 import json
@@ -28,6 +29,7 @@ DEFAULT_TOP_K = 5
 DEFAULT_MAX_NEW_TOKENS = 128
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 SEED = 42
+
 
 @dataclass
 class Passage:
@@ -92,16 +94,25 @@ def _load_to_device(model: torch.nn.Module, label: str) -> torch.nn.Module:
 
 
 class Retriever:
-    def __init__(self, embedding_model: str = DEFAULT_EMBEDDING_MODEL):
+    def __init__(
+        self,
+        embedding_model: str = DEFAULT_EMBEDDING_MODEL,
+        tokenizer: AutoTokenizer | None = None,
+        encoder: torch.nn.Module | None = None,
+    ):
         self.embedding_model = embedding_model
         print(f"Loading embedding model (Encoder only): {embedding_model}")
-        self.tokenizer = AutoTokenizer.from_pretrained(embedding_model)
-        dtype = _generator_dtype() if DEVICE == "cuda" else torch.float32
-        
-        # Load Seq2Seq and extract encoder to save VRAM
-        full_model = AutoModelForSeq2SeqLM.from_pretrained(embedding_model, torch_dtype=dtype)
-        self.model = _load_to_device(full_model.get_encoder(), "embedding encoder").eval()
-        
+        self.tokenizer = tokenizer or AutoTokenizer.from_pretrained(embedding_model)
+        if encoder is None:
+            dtype = _generator_dtype() if DEVICE == "cuda" else torch.float32
+
+            full_model = AutoModelForSeq2SeqLM.from_pretrained(
+                embedding_model, torch_dtype=dtype
+            )
+            encoder = full_model.get_encoder()
+
+        self.model = _load_to_device(encoder, "embedding encoder").eval()
+
         self.passages: list[Passage] = []
         self.all_latents: dict[str, torch.Tensor] = {}
         self.latent_file: str | None = None
@@ -113,7 +124,7 @@ class Retriever:
         # Add task prefixes to help the generative encoder align search concepts
         prefix = "Query: " if is_query else "Document: "
         prefixed_texts = [prefix + t for t in texts]
-        
+
         encoded = self.tokenizer(
             prefixed_texts,
             padding=True,
@@ -121,7 +132,7 @@ class Retriever:
             max_length=512,
             return_tensors="pt",
         ).to(device)
-        
+
         outputs = self.model(**encoded)
         latents = outputs.last_hidden_state.cpu()
         attention_mask = encoded["attention_mask"].cpu().bool()
@@ -141,16 +152,18 @@ class Retriever:
         self.passages = passages
         n_batches = (len(passages) + batch_size - 1) // batch_size
         print(f"Embedding {len(passages)} passages ({n_batches} batches)...")
-        
+
         self.all_latents = {}
-        
+
         for i, start in enumerate(range(0, len(passages), batch_size)):
             batch = passages[start : start + batch_size]
-            latents_batch = self._embed([passage.text for passage in batch], is_query=False)
-            
+            latents_batch = self._embed(
+                [passage.text for passage in batch], is_query=False
+            )
+
             for p, lat in zip(batch, latents_batch):
                 self.all_latents[p.passage_id] = lat
-                
+
             if (i + 1) % 10 == 0 or i + 1 == n_batches:
                 print(f"  batch {i + 1}/{n_batches}")
 
@@ -171,17 +184,17 @@ class Retriever:
 
         import gc
         import torch
-        
+
         # Free up unused memory before the massive write
         gc.collect()
-        
+
         # Ensure tensors are contiguous in memory to prevent safetensors from duplicating them
         self.all_latents = {k: v.contiguous() for k, v in self.all_latents.items()}
-        
+
         # Save massive latents via safetensors
         print("Saving Latent Sequences to Safetensors...")
         save_file(self.all_latents, str(index_dir / "latents.safetensors"))
-        
+
         # Clear out the dictionary immediately after saving to free RAM for the next steps
         self.all_latents.clear()
         gc.collect()
@@ -205,7 +218,9 @@ class Retriever:
         if not metadata_path.exists():
             raise FileNotFoundError(f"Metadata file not found: {metadata_path}")
         if not Path(self.latent_file).exists():
-            raise FileNotFoundError(f"Safetensors latents not found: {self.latent_file}")
+            raise FileNotFoundError(
+                f"Safetensors latents not found: {self.latent_file}"
+            )
 
         self.passages = []
         with metadata_path.open(encoding="utf-8") as handle:
@@ -229,7 +244,9 @@ class Retriever:
             )
         return config
 
-    def retrieve(self, query: str, top_k: int) -> tuple[list[Passage], list[torch.Tensor], float]:
+    def retrieve(
+        self, query: str, top_k: int
+    ) -> tuple[list[Passage], list[torch.Tensor], float]:
         if not self.passages:
             raise ValueError("Retriever index is not loaded.")
         if top_k <= 0:
@@ -237,49 +254,59 @@ class Retriever:
 
         t0 = time.perf_counter()
         device = next(self.model.parameters()).device
-        
+
         # Embed query and normalize
         query_latents = self._embed([query], is_query=True)[0].to(device).float()
-        q_norm = F.normalize(query_latents, p=2, dim=-1) # [q_len, hidden_dim]
+        q_norm = F.normalize(query_latents, p=2, dim=-1)  # [q_len, hidden_dim]
 
         CHUNK_SIZE = 1000
         all_scores = []
-        
+
         # ColBERT MaxSim Exhaustive Search via chunked PyTorch matrix operations
         for i in range(0, len(self.raw_latents_cpu), CHUNK_SIZE):
             chunk = self.raw_latents_cpu[i : i + CHUNK_SIZE]
-            
+
             # Pad chunk into dense tensor
-            padded_chunk = torch.nn.utils.rnn.pad_sequence(chunk, batch_first=True).to(device).float() # [N, max_p_len, D]
+            padded_chunk = (
+                torch.nn.utils.rnn.pad_sequence(chunk, batch_first=True)
+                .to(device)
+                .float()
+            )  # [N, max_p_len, D]
             padded_norm = F.normalize(padded_chunk, p=2, dim=-1)
-            
+
             # Compute valid padding mask
             lengths = torch.tensor([len(c) for c in chunk], device=device)
             max_len = padded_chunk.shape[1]
-            mask = torch.arange(max_len, device=device).unsqueeze(0) < lengths.unsqueeze(1) # [N, max_p_len]
-            
+            mask = torch.arange(max_len, device=device).unsqueeze(
+                0
+            ) < lengths.unsqueeze(
+                1
+            )  # [N, max_p_len]
+
             # Compute token similarities: [N, q_len, p_len]
-            sim = torch.einsum('qd, npd -> nqp', q_norm, padded_norm)
-            
+            sim = torch.einsum("qd, npd -> nqp", q_norm, padded_norm)
+
             # Mask out invalid padding tokens (set similarities to very low number)
             sim = sim.masked_fill(~mask.unsqueeze(1), -1e9)
-            
+
             # MaxSim: max over passage tokens
-            max_sim, _ = sim.max(dim=2) # [N, q_len]
-            
+            max_sim, _ = sim.max(dim=2)  # [N, q_len]
+
             # Sum over query tokens
-            scores = max_sim.sum(dim=1) # [N]
+            scores = max_sim.sum(dim=1)  # [N]
             all_scores.append(scores.cpu())
 
         all_scores = torch.cat(all_scores, dim=0)
         top_scores, top_indices = torch.topk(all_scores, min(top_k, len(self.passages)))
-        
+
         top_indices_list = top_indices.tolist()
         passages = [self.passages[idx] for idx in top_indices_list]
-        
+
         # Fetch the original, unmodified latents directly from memory for the generator
-        latents_list = [self.raw_latents_cpu[idx].to(device) for idx in top_indices_list]
-        
+        latents_list = [
+            self.raw_latents_cpu[idx].to(device) for idx in top_indices_list
+        ]
+
         elapsed = time.perf_counter() - t0
         return passages, latents_list, elapsed
 
@@ -295,7 +322,7 @@ class Generator:
 
         print(f"Loading generator model (Seq2Seq Full): {generator_model}")
         self.tokenizer = AutoTokenizer.from_pretrained(generator_model)
-        
+
         self.model = _load_to_device(
             AutoModelForSeq2SeqLM.from_pretrained(
                 generator_model,
@@ -305,30 +332,38 @@ class Generator:
         ).eval()
 
     @torch.no_grad()
-    def generate(self, query: str, passage_latents: list[torch.Tensor]) -> tuple[str, dict]:
+    def generate(
+        self, query: str, passage_latents: list[torch.Tensor]
+    ) -> tuple[str, dict]:
         device = next(self.model.parameters()).device
-        
+
         # Encode the query live
         q_enc = self.tokenizer(f"Question: {query}", return_tensors="pt").to(device)
-        q_latents = self.model.get_encoder()(**q_enc).last_hidden_state[0] # [q_len, hidden]
-        
+        q_latents = self.model.get_encoder()(**q_enc).last_hidden_state[
+            0
+        ]  # [q_len, hidden]
+
         # Combine Latent Space Matrices (1 query sequence + k passage sequences)
         batch_latents = [q_latents] + passage_latents
-        combined_latents = torch.cat(batch_latents, dim=0).unsqueeze(0) # [1, total_len, hidden_dim]
+        combined_latents = torch.cat(batch_latents, dim=0).unsqueeze(
+            0
+        )  # [1, total_len, hidden_dim]
 
         # Manual Greedy Decoding Loop injection via encoder_outputs
         start_token_id = getattr(self.model.config, "decoder_start_token_id", None)
         if start_token_id is None:
-            start_token_id = getattr(self.model.config, "bos_token_id", self.tokenizer.pad_token_id)
-            
+            start_token_id = getattr(
+                self.model.config, "bos_token_id", self.tokenizer.pad_token_id
+            )
+
         decoder_input_ids = torch.tensor([[start_token_id]], device=device)
-        
+
         # Wrap the latents in a BaseModelOutput object for the new architectures!
         encoder_outputs_obj = BaseModelOutput(last_hidden_state=combined_latents)
-        
+
         t0 = time.perf_counter()
         generated_tokens = 0
-        
+
         for _ in range(self.max_new_tokens):
             outputs = self.model(
                 encoder_outputs=encoder_outputs_obj,
@@ -338,12 +373,14 @@ class Generator:
             next_token = torch.argmax(outputs.logits[:, -1, :], dim=-1).unsqueeze(-1)
             decoder_input_ids = torch.cat([decoder_input_ids, next_token], dim=-1)
             generated_tokens += 1
-            
+
             if next_token.item() == self.tokenizer.eos_token_id:
                 break
-                
+
         generation_time = time.perf_counter() - t0
-        answer = self.tokenizer.decode(decoder_input_ids[0, 1:], skip_special_tokens=True).strip()
+        answer = self.tokenizer.decode(
+            decoder_input_ids[0, 1:], skip_special_tokens=True
+        ).strip()
 
         stats = {
             "generated_tokens": generated_tokens,
@@ -366,26 +403,32 @@ class RAGPipeline:
         self.top_k = top_k
         self.index_config = load_index_config(index_dir)
         actual_embedding_model = embedding_model or self.index_config.embedding_model
-        
+
         if actual_embedding_model != self.index_config.embedding_model:
             raise ValueError(
                 "Requested embedding model does not match the loaded index. "
                 f"Requested {actual_embedding_model}, index was built with {self.index_config.embedding_model}."
             )
-            
-        self.retriever = Retriever(actual_embedding_model)
-        self.retriever.load(index_dir)
+
         self.generator = Generator(
             generator_model=generator_model,
             max_new_tokens=max_new_tokens,
         )
+        self.retriever = Retriever(
+            actual_embedding_model,
+            tokenizer=self.generator.tokenizer,
+            encoder=self.generator.model.get_encoder(),
+        )
+        self.retriever.load(index_dir)
 
     def run(self, query: str) -> Result:
         t0 = time.perf_counter()
-        
+
         # New Unpacking includes memory-heavy sequence tensors!
-        retrieved_passages, passage_latents, retrieval_time = self.retriever.retrieve(query, self.top_k)
-        
+        retrieved_passages, passage_latents, retrieval_time = self.retriever.retrieve(
+            query, self.top_k
+        )
+
         # Generator bypasses texts and takes passage_latents directly
         answer, stats = self.generator.generate(query, passage_latents)
 
